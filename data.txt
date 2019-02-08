@@ -1,0 +1,1 @@
+{"playerB": [{"lostB": 0, "name": "", "wonB": 0}], "playerA": [{"lostA": 0, "name": "", "wonA": 0}]}

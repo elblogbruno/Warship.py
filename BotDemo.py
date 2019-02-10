@@ -6,6 +6,7 @@ This is built on the API wrapper, see echobot2.py to see the same example built
 on the telegram.ext bot framework.
 This program is dedicated to the public domain under the CC0 license.
 """
+from PIL import Image, ImageDraw, ImageFont
 import logging
 import telegram
 from telegram.error import NetworkError, Unauthorized
@@ -28,7 +29,33 @@ update_id = None
 c, addr = s.accept()
 print ('Got connection from', addr)
 word = 'Thank you for connecting'
+positions = {"0:0":(20,20),"0:1":(140,20),"0:2":(260,20),"0:3":(375,20),"0:4":(490,20),
+            "1:0":(20,135),"1:1":(140,135),"1:2":(260,135),"1:3":(375,135),"1:4":(495,135),
+            "2:0":(20,255),"2:1":(140,255),"2:2":(260,255),"2:3":(375,255),"2:4":(495,255),
+            "3:0":(20,375),"3:1":(140,375),"3:2":(260,375),"3:3":(375,375),"3:4":(495,375),
+            "4:0":(20,495),"4:1":(140,495),"4:2":(260,495),"4:3":(375,495),"4:4":(495,495)}
+size = 85, 85
+grid = Image.open('grid.png', 'r').convert('RGBA')
+wave_icon = Image.open('wave_icon.png', 'r').convert('RGBA')
+wave_icon.load()
+ship_icon = Image.open('ship_icon_better1.png', 'r').convert('RGBA')
+ship_icon.load()
+white_paint = Image.open('white_paint.png', 'r').convert('RGBA')
+white_paint.load()
+sunk_icon = Image.open('sunk_ship.png', 'r').convert('RGBA')
+sunk_icon.load()
 
+ship_icon.thumbnail(size, Image.ANTIALIAS)
+ship_mask=ship_icon.split()[3]
+white_paint.thumbnail(size, Image.ANTIALIAS)
+white_mask=white_paint.split()[3]
+wave_icon.thumbnail(size, Image.ANTIALIAS)
+wave_mask=wave_icon.split()[3]
+sunk_icon.thumbnail(size, Image.ANTIALIAS)
+sunk_mask=sunk_icon.split()[3]
+
+def pasteIcon(icon,pos,icon_mask):
+    grid.paste(icon,pos,icon_mask)
 def main():
     # a forever loop until we interrupt it or
     # an error occurs
@@ -82,9 +109,14 @@ def echo(bot):
                 c.send(update.message.text)
                 c.send(joke.joke)
             else:
+                chat_id = update.message.chat_id
                 msg = update.message.text
-                update.message.reply_text(update.message.text)
+                #update.message.reply_text(update.message.text)
                 #sendData("hello")
-                c.send(update.message.text)
+                pos = positions["0:1"]
+                print pos
+                pasteIcon(ship_icon,pos,ship_mask)
+                bot.send_photo(chat_id=chat_id, photo=open('out.png', 'rb'))
+                #c.send(update.message.text)
 if __name__ == '__main__':
     main()

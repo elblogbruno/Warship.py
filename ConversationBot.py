@@ -3,6 +3,7 @@
 #
 # Simple Bot to reply to Telegram messages
 # This program is dedicated to the public domain under the CC0 license.
+
 """
 This Bot uses the Updater class to handle the bot.
 
@@ -16,7 +17,7 @@ Send /start to initiate the conversation.
 Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
-
+from PIL import Image, ImageDraw, ImageFont
 from telegram import ReplyKeyboardMarkup
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, RegexHandler,
                           ConversationHandler)
@@ -31,10 +32,36 @@ logger = logging.getLogger(__name__)
 
 CHOOSING, TYPING_REPLY, TYPING_CHOICE = range(3)
 
-reply_keyboard = [['Name'],['Start Game']]
+reply_keyboard = [['Age', 'Favourite colour'],
+                  ['Number of siblings', 'Something else...'],['Start Game']]
 markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+positions = {"0:0":(20,20),"0:1":(140,20),"0:2":(260,20),"0:3":(375,20),"0:4":(490,20),
+            "1:0":(20,135),"1:1":(140,135),"1:2":(260,135),"1:3":(375,135),"1:4":(495,135),
+            "2:0":(20,255),"2:1":(140,255),"2:2":(260,255),"2:3":(375,255),"2:4":(495,255),
+            "3:0":(20,375),"3:1":(140,375),"3:2":(260,375),"3:3":(375,375),"3:4":(495,375),
+            "4:0":(20,495),"4:1":(140,495),"4:2":(260,495),"4:3":(375,495),"4:4":(495,495)}
+size = 85, 85
+grid = Image.open('grid.png', 'r').convert('RGBA')
+wave_icon = Image.open('wave_icon.png', 'r').convert('RGBA')
+wave_icon.load()
+ship_icon = Image.open('ship_icon_better1.png', 'r').convert('RGBA')
+ship_icon.load()
+white_paint = Image.open('white_paint.png', 'r').convert('RGBA')
+white_paint.load()
+sunk_icon = Image.open('sunk_ship.png', 'r').convert('RGBA')
+sunk_icon.load()
 
+ship_icon.thumbnail(size, Image.ANTIALIAS)
+ship_mask=ship_icon.split()[3]
+white_paint.thumbnail(size, Image.ANTIALIAS)
+white_mask=white_paint.split()[3]
+wave_icon.thumbnail(size, Image.ANTIALIAS)
+wave_mask=wave_icon.split()[3]
+sunk_icon.thumbnail(size, Image.ANTIALIAS)
+sunk_mask=sunk_icon.split()[3]
 
+def pasteIcon(icon,pos,icon_mask):
+    grid.paste(icon,pos,icon_mask)
 def facts_to_str(user_data):
     facts = list()
 
@@ -55,16 +82,14 @@ def start(bot, update):
 
 
 def regular_choice(bot, update, user_data):
-    chat_id = update.message.chat_id
     text = update.message.text
     user_data['choice'] = text
     update.message.reply_text(
         'Your {}? Yes, I would love to hear about that!'.format(text.lower()))
-    bot.send_photo(chat_id=chat_id, photo=open('out.png', 'rb'))
     text = update.message.text
     category = user_data['choice']
     user_data[category] = text
-    print(facts_to_str(user_data[category]))
+    print(user_data)
     return TYPING_REPLY
 
 
@@ -74,20 +99,39 @@ def custom_choice(bot, update):
 
     return TYPING_CHOICE
 
+def echo(bot):
+    """Echo the message the user sent."""
+    global update_id
+    # Request updates after the last update_id
+    for update in bot.get_updates(offset=update_id, timeout=10):
+        update_id = update.update_id + 1
 
+        if update.message:  # your bot can receive updates without messages
+            # Reply to the message
+            #print(update.message.text)
+            joke = jokes.random(categories=['nerdy'])
+            #Printing initial joke
+            #print (joke.joke)
+            chat_id = update.message.chat_id
+            pos = positions[update.message.text]
+            print pos
+            pasteIcon(ship_icon,pos,ship_mask)
+            bot.send_photo(chat_id=chat_id, photo=open('out.png', 'rb'))
 def received_information(bot, update, user_data):
     text = update.message.text
     category = user_data['choice']
     user_data[category] = text
     del user_data['choice']
-
+    chat_id = update.message.chat_id
     update.message.reply_text("Neat! Just so you know, this is what you already told me:"
                               "{}"
                               "You can tell me more, or change your opinion on something.".format(
                                   facts_to_str(user_data)), reply_markup=markup)
-
+    pos = positions[update.message.text]
+    print pos
+    pasteIcon(ship_icon,pos,ship_mask)
+    bot.send_photo(chat_id=chat_id, photo=open('out.png', 'rb'))
     return CHOOSING
-
 
 def done(bot, update, user_data):
     if 'choice' in user_data:
@@ -129,13 +173,12 @@ def main():
         entry_points=[CommandHandler('start', start)],
 
         states={
-            CHOOSING: [RegexHandler('^(Name)$',
+            CHOOSING: [RegexHandler('^(Age|Favourite colour|Number of siblings)$',
                                     regular_choice,
                                     pass_user_data=True),
                        RegexHandler('^Something else...$',
                                     custom_choice),
                        ],
-
             TYPING_CHOICE: [MessageHandler(Filters.text,
                                            regular_choice,
                                            pass_user_data=True),
@@ -162,6 +205,12 @@ def main():
     # SIGTERM or SIGABRT. This should be used most of the time, since
     # start_polling() is non-blocking and will stop the bot gracefully.
     updater.idle()
-
+    while True:
+        try:
+            echo(bot)
+        except NetworkError:
+            sleep(1)
+        except Unauthorized:
+            # The user has removed or blocked the bot.
 if __name__ == '__main__':
     main()

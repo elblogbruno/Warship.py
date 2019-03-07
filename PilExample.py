@@ -19,7 +19,7 @@ positions_5 = [[(20,495)],[(140,495)],[(260,495)],[(375,495)],[(495,495)]]
 # TODO: Create function that draws any image in the certain location passed.
 
 size = 85, 85
-grid = Image.open('grid.png', 'r').convert('RGBA')
+grid = Image.open('grid.png', 'r')
 wave_icon = Image.open('wave_icon.png', 'r').convert('RGBA')
 wave_icon.load()
 ship_icon = Image.open('ship_icon_better1.png', 'r').convert('RGBA')
@@ -114,4 +114,4 @@ r = input("please tell me a position: ")
 pos = positions[r]
 print(pos)
 pasteIcon(sunk_icon,pos,sunk_mask)
-grid.save("out.png")
+grid.save("out.jpg")

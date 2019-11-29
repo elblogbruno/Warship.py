@@ -214,7 +214,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ButtonAttackCoordenates: 
   ButtonGridImage: {fileID: 5097071103203721737}
-  positionText: {fileID: 0}
+  positionText: {fileID: 7268844439925668969}
   BGon: {fileID: 21300000, guid: 852a12c9a9ee5f748b2f5be303878846, type: 3}
   BGoff: {fileID: 21300000, guid: ed59223c55a09ab468d7d95564618f85, type: 3}
   PythonClient: {fileID: 0}

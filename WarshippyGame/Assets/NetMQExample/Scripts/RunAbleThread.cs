@@ -20,7 +20,10 @@ public abstract class RunAbleThread
         // from doing other tasks like drawing game scenes
         _runnerThread = new Thread(Run);
     }
-    
+    public void OnNewText(string text)
+    {
+        OnMessageReceived.Invoke(text);
+    }
     protected bool Running { get; private set; }
 
 

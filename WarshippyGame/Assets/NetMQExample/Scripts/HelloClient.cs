@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using TMPro;
-using System.Diagnostics;
 using UnityEngine.Events;
 
 public class HelloClient : MonoBehaviour
@@ -12,14 +11,27 @@ public class HelloClient : MonoBehaviour
     {
         _helloRequester = new HelloRequester();
         //_helloRequester.Start();
+
         _helloRequester.OnMessageReceived.AddListener(OnNewMessageReceived);
+
     }
     void OnNewMessageReceiveFromServer(string NewMessage)
     {
         print("Received message from server at HelloClient: " + NewMessage);
         OnNewMessageReceived(NewMessage);
     }
+    void Update()
+    {
+        if (_helloRequester.OnMessageReceived == null)
+        {
+            Debug.Log("OnMessageReceived is null");
 
+        }
+        else{
+           
+        }
+
+    }
     public void CloseConnection()
     {
         _helloRequester = new HelloRequester();

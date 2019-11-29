@@ -89,5 +89,6 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
         Debug.Log(ButtonAttackCoordenates);
         PythonClient.SendText(ButtonAttackCoordenates);
         TakeScreenshotOfPlay(WIDTH,HEIGHT);
+        InfoPanelManager.instance.SpawnInfoMessage("Attacking Bot Player at this coordenates: "+ ButtonAttackCoordenates);
     }
 }

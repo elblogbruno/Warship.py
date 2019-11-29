@@ -46,7 +46,7 @@ public class HelloRequester : RunAbleThread
             {
                 Debug.Log("Received " + message);
                 receivedMessage = message;
-                OnMessageReceived.Invoke(message);
+                    OnNewText(message);
             }
             
             }

@@ -1,0 +1,8 @@
+print("[Server] Server is working.")
+        message = socket.recv()
+        print ("[Server] Received request: " + message)
+        time.sleep (1)
+        coordenates_to_attack = getBotAttackCoordenates()
+        print ("[Server] Sending this coordenates: " + coordenates_to_attack)
+        socket.send_string(coordenates_to_attack)
+        onNewText(message)

@@ -4,16 +4,19 @@ import zmq
 import BotDemo as bot
 import sys
 import threading
-import BotHelper 
+import GameHelper 
 port = "5555"
 
-
+oldCoordenates = " "
 context = zmq.Context()
 socket = context.socket(zmq.REP)
 socket.bind("tcp://*:"+str(port))
-botLaunched = False
-bot.setBotToken("729316731:AAEAoHTXtMSSbRAh38rBZW6y-O-H5vESoEk")
-bot.startBot()
+
+
+def startServer():
+    print("[Server] Starting server.")
+    z = threading.Thread(target=worker)
+    z.start()
 def isBase64(s):
     try:
         return base64.b64encode(base64.b64decode(s)) == s
@@ -40,24 +43,36 @@ def onNewText(message):
             onNewMessage(message)
 
 
-def attackPCClient(coordenates):
-    print("[Server] Attacking PC Client with this coordenates: " + coordenates)
+def getBotAttackCoordenates():
+    print("[Server] Attacking PC Client with this coordenates: " + GameHelper.getCoordenates())
+    global oldCoordenates
+    newCoordenates = GameHelper.getCoordenates()
+    if(newCoordenates != oldCoordenates):
+            print("[Server] New attack coordenates: " + newCoordenates)
+            oldCoordenates = newCoordenates
+    else:
+            print("[Server] Same attack coordenates: " + oldCoordenates)
+    return oldCoordenates
 def worker():
     i = 0
     while True:
         try:
-            print("[Server] I've entered.")
+            print("[Server] Server is working.")
             message = socket.recv()
-            print ("[Server] Received request: ", message)
-            time.sleep (1)
-            socket.send_string("World from %s" % port)
+            print ("[Server] Received request: " + str(message))
+            #time.sleep (1)
+            coordenates_to_attack = getBotAttackCoordenates()
+            print ("[Server] Sending this coordenates: " + coordenates_to_attack)
+            socket.send_string(coordenates_to_attack)
             onNewText(message)
         except zmq.ZMQError as e:
             i = i +1
             print("[Server] Valor de i: " + str(i))
             print("[Server] ERROR: " + str(e))
-            pass       
-z = threading.Thread(target=worker)
-z.start()
+     
 
 
+if __name__ == "__main__":
+    startServer()
+    bot.setBotToken("729316731:AAEAoHTXtMSSbRAh38rBZW6y-O-H5vESoEk")
+    bot.startBot()

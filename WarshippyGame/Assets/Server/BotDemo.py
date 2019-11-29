@@ -14,7 +14,7 @@ import zmq
 import base64
 jokes = ChuckNorris()
 import threading
-import BotHelper
+import GameHelper
 
 
 class chat_bot_user:
@@ -199,6 +199,6 @@ def echo():
             print("[Bot] Current Chat ID: " + str(chat_id))
             print("[Bot] Current Received Message: " + str(ReceivedMessage))
 
-            BotHelper.update_position(ReceivedMessage)
+            GameHelper.update_position(ReceivedMessage)
 
 

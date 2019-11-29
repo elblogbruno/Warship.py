@@ -1,0 +1,1 @@
+C:\Users\Ron\AppData\Local\Programs\Python\Python37-32\python.exe C:\Users\elblo\Desktop\Proyectos\Python\Unity3D-Python-Communication-master\WarshippyGame\Assets\Server\serverDemozmq.py

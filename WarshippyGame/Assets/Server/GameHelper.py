@@ -1,7 +1,17 @@
+# -*- coding: utf-8 -*-
 import BotDemo as bot
 import string
-
+import os
 coordenates = " "
+message = " "
+def setCurrentMessage(text):
+        global message
+        message  = text
+        print("[GameHelper] Setting current message to: " + message)
+def getMessages():
+        global message
+        #print("[GameHelper] Returning current message to server: " + message)
+        return message
 def wrongPosition(position):
         l = position.split(":")
         if len(l) == 2:
@@ -28,6 +38,7 @@ def isAValidPosition(s):
                 return False
     return True
 def getCoordenates():
+        global coordenates
         return coordenates
 def update_position(pos):
     if pos != None:
@@ -35,13 +46,12 @@ def update_position(pos):
                 if thereIsNoNumber(pos) == False:
                         if wrongPosition(pos) == False:
                                 msg = "Attacking user at this coordenates : " + pos
-                                bot.sendText(msg)
+                                bot.send_text(msg)
                                 global coordenates
                                 coordenates = pos
-                                #server.attackPCClient(pos)
                 else:
                         msg = "This position is not available, Please write a coordenate like this: 2:2 [x,y]"
-                        bot.sendText(msg)
+                        bot.send_text(msg)
         else:
                 msg = "This position is not available, Please write a coordenate like this: 2:2 [x,y]"
-                bot.sendText(msg)
+                bot.send_text(msg)

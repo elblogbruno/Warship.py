@@ -10,6 +10,7 @@ using UnityEngine.Events;
 public abstract class RunAbleThread
 {
     private readonly Thread _runnerThread;
+    private readonly Thread _ReceiveThread;
     public string messageToSend;
     public string logMessage;
     public string receivedMessage;
@@ -19,6 +20,7 @@ public abstract class RunAbleThread
         // we need to create a thread instead of calling Run() directly because it would block unity
         // from doing other tasks like drawing game scenes
         _runnerThread = new Thread(Run);
+        _ReceiveThread = new Thread(Receive);
     }
     public void OnNewText(string text)
     {
@@ -33,6 +35,7 @@ public abstract class RunAbleThread
     /// called) to determine when you should stop the method.
     /// </summary>
     protected abstract void Run();
+    protected abstract void Receive();
     protected bool IsBase64String()
     {
         string s = messageToSend;
@@ -45,6 +48,7 @@ public abstract class RunAbleThread
     {
         Running = true;
         _runnerThread.Start();
+        _ReceiveThread.Start();
     }
     
     public void Stop()
@@ -53,5 +57,6 @@ public abstract class RunAbleThread
         // block main thread, wait for _runnerThread to finish its job first, so we can be sure that 
         // _runnerThread will end before main thread end
         _runnerThread.Join();
+        _ReceiveThread.Join();
     }
 }

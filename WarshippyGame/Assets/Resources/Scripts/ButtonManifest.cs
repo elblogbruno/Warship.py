@@ -47,7 +47,7 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
         // Encode texture into PNG
         var bytes = tex.EncodeToJPG();
         string bytesstr = Convert.ToBase64String(bytes);
-        PythonClient.SendText(bytesstr);
+        //PythonClient.SendText(bytesstr);
         Destroy(tex);
 
         //System.IO.File.WriteAllBytes(Application.dataPath + "SavedScreen.png", bytes);

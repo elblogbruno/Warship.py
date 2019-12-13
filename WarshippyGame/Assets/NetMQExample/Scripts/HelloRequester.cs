@@ -29,11 +29,30 @@ public class HelloRequester : RunAbleThread
             if(Running){
                 Debug.Log("Sending the message to send.");
                 client.SendFrame(messageToSend);
-                // ReceiveFrameString() blocks the thread until you receive the string, but TryReceiveFrameString()
-                // do not block the thread, you can try commenting one and see what the other does, try to reason why
-                // unity freezes when you use ReceiveFrameString() and play and stop the scene without running the server
-                //                string message = client.ReceiveFrameString();
-                //                Debug.Log("Received: " + message);
+                
+            }
+            
+            
+        }
+
+        NetMQConfig.Cleanup(); // this line is needed to prevent unity freeze after one use, not sure why yet
+    }
+
+    /// <summary>
+    ///     Request Hello message to server and receive message back. Do it 10 times.
+    ///     Stop requesting when Running=false.
+    /// </summary>
+    /// 
+    protected override void Receive()
+    {
+        ForceDotNet.Force(); // this line is needed to prevent unity freeze after one use, not sure why yet
+        using (RequestSocket client = new RequestSocket())
+        {
+
+            client.Connect("tcp://localhost:5555");
+
+            if (Running)
+            {
                 string message = null;
                 bool gotMessage = false;
                 while (Running)
@@ -42,13 +61,13 @@ public class HelloRequester : RunAbleThread
                     if (gotMessage) break;
                 }
 
-            if (gotMessage)
-            {
-                Debug.Log("Received " + message);
-                receivedMessage = message;
+                if (gotMessage)
+                {
+                    Debug.Log("Received " + message);
+                    receivedMessage = message;
                     OnNewText(message);
-            }
-            
+                }
+
             }
         }
 

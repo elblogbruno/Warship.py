@@ -77,10 +77,10 @@ def update_position(pos):
                     pasteIcon(ship_icon,position,ship_mask)
                     bot.send_image(BOT_TOKEN,"out.png")
                     msg = "Where do you want to attack?"
-                    bot.sendText(BOT_TOKEN,msg)
+                    bot.send_text(BOT_TOKEN,msg)
     else:
         msg = "This position is not available, Please write a coordenate like this: 2:2"
-        bot.sendText(BOT_TOKEN,msg)
+        bot.send_text(BOT_TOKEN,msg)
 def ClearGrid(panel):
     for position in positions:
         print(position)
@@ -103,9 +103,9 @@ def update_position_panel(pos,panel):
                     panel.image = img2
                     bot.send_image(BOT_TOKEN,"out.png")
                     msg = "Where do you want to attack?"
-                    bot.sendText(BOT_TOKEN,msg)
+                    bot.send_text(BOT_TOKEN,msg)
                     bot.send_audio(bot.warlib.BOT_TOKEN,"Atacando barco en las coordenadas " + pos)
     else:
         messagebox.showinfo(gameTitle, "This position is not available")
         msg = "This position is not available, Please write a coordenate like this: 2:2"
-        bot.sendText(BOT_TOKEN,msg)
+        bot.send_text(BOT_TOKEN,msg)

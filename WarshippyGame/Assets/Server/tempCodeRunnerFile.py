@@ -1,8 +1,14 @@
-print("[Server] Server is working.")
-        message = socket.recv()
-        print ("[Server] Received request: " + message)
-        time.sleep (1)
-        coordenates_to_attack = getBotAttackCoordenates()
-        print ("[Server] Sending this coordenates: " + coordenates_to_attack)
-        socket.send_string(coordenates_to_attack)
-        onNewText(message)
+# Socket is confused. Close and remove it.
+            client.setsockopt(zmq.LINGER, 0)
+            client.close()
+            poll.unregister(client)
+            retries_left -= 1
+            if retries_left == 0:
+                print("E: Server seems to be offline, abandoning")
+                break
+            print("I: Reconnecting and resending (%s)" % request)
+            # Create new connection
+            client = context.socket(zmq.REQ)
+            client.connect(SERVER_ENDPOINT)
+            poll.register(client, zmq.POLLIN)
+            client.send(request)

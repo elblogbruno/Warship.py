@@ -115,7 +115,7 @@ def button():
     return b
 def startGame(controller):
     controller.show_frame(PageOne)
-    bot.sendText(bot.warlib.BOT_TOKEN,"WELCOME TO WARSHIP.PY, A game about sinking ships and winning bots..")
+    bot.send_text(bot.warlib.BOT_TOKEN,"WELCOME TO WARSHIP.PY, A game about sinking ships and winning bots..")
     bot.send_audio(bot.warlib.BOT_TOKEN,"Hola")
     bot.send_image_url(bot.warlib.BOT_TOKEN,"https://vignette.wikia.nocookie.net/central/images/4/40/Hello_there.jpg")
 class PageOne(tk.Frame):

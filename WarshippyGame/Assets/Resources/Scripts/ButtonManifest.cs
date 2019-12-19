@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using System.IO;
 using System;
+using UnityEngine.Networking;
 
 public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
 {
@@ -20,6 +21,16 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
     public Sprite BGoff;
     [HideInInspector]
     public HelloClient PythonClient;
+
+    public string API_URL
+    {
+        get
+        {
+            return string.Format("http://127.0.0.1:5001/");
+        }
+    }
+
+
     public void OnPointerEnter(PointerEventData eventData)
     {
         SoundManager.instance.PlaySingle(SoundManager.SoundType.BUTTON_SOUND);
@@ -72,17 +83,38 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
 
         // Encode texture into PNG
         var bytes = tex.EncodeToJPG();
-        string bytesstr = Convert.ToBase64String(bytes);
-        PythonClient.SendText(bytesstr);
+        SendFile(tex.EncodeToJPG(), "name"+System.DateTime.UtcNow);
+        //string bytesstr = Convert.ToBase64String(bytes);
+        //PythonClient.SendText(bytesstr);
         Destroy(tex);
 
     }
 
-    
+    public void SendFile(byte[] bytes, string filename, string caption = "")
+    {
+        WWWForm form = new WWWForm();
+        form.AddBinaryData("image", bytes, filename, "filename");
+        UnityWebRequest www = UnityWebRequest.Post(API_URL + "sendimage?", form);
+        StartCoroutine(SendRequest(www));
+    }
+
+    IEnumerator SendRequest(UnityWebRequest www)
+    {
+        yield return www.SendWebRequest();
+        if (www.isNetworkError)
+        {
+            Debug.Log(www.error);
+        }
+        else
+        {
+            var w = www;
+            Debug.Log("Success!\n" + www.downloadHandler.text);
+        }
+    }
 
     // SERVER //////////////////////////
 
-   
+
 
     public void onClick()
     {

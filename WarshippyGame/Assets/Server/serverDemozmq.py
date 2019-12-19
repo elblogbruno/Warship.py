@@ -49,7 +49,7 @@ def onReadMessage():
     print ("[Server] Received request: " + str(message))
     
 def getBotAttackCoordenates():
-    #print("[Server] Attacking PC Client with this coordenates: " + GameHelper.getCoordenates())
+    print("[Server] Attacking PC Client with this coordenates: " + GameHelper.getCoordenates())
     global oldCoordenates
     newCoordenates = GameHelper.getCoordenates()
     if(newCoordenates != oldCoordenates):
@@ -67,8 +67,7 @@ def startServer():
         getBotAttackCoordenates()
         #onNewMessageFromHelper()
 
-def onNewMessageFromHelper():
-    
+def onNewMessageFromHelper():   
     global oldCoordenates
     newCoordenates = GameHelper.getMessages()
     if(newCoordenates != oldCoordenates):
@@ -79,11 +78,12 @@ def onNewMessageFromHelper():
     return oldCoordenates
 
 if __name__ == "__main__": 
-    z = threading.Thread(target=getBotAttackCoordenates)
-    w = threading.Thread(target=onReadMessage)
+    #z = threading.Thread(target=getBotAttackCoordenates)
+    #w = threading.Thread(target=onReadMessage)
     bot.setBotToken("729316731:AAEAoHTXtMSSbRAh38rBZW6y-O-H5vESoEk")
-    z.start()
-    w.start()
+    #z.start()
+    #w.start()
+    #startServer
     bot.main()
     
         

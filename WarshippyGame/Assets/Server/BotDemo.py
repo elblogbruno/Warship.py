@@ -46,6 +46,8 @@ def startBot():
 def error(update, context):
     """Log Errors caused by Updates."""
     print('Update "%s" caused error "%s"', update, context.error)
+def getid(update, context):
+     update.message.reply_text(update.message.chat_id)
 def main():
     """Start the bot."""
     print("[Bot] Starting the bot...")
@@ -58,7 +60,7 @@ def main():
     dp = updater.dispatcher
 
     # # on different commands - answer in Telegram
-    # dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("getid", getid))
     # dp.add_handler(CommandHandler("help", help))
 
     # on noncommand i.e message - echo the message on Telegram
@@ -144,8 +146,23 @@ def send_text(msg):
             bot = telegram.Bot(botToken)
             bot.sendMessage(chat_id,msg,timeout = 10)
             return
-
-            
+def get_user_text():
+    global botToken
+    
+    bot = telegram.Bot(botToken)
+    #chat_id = bot.get_updates(timeout = 10)[-1].message.chat_id
+    try:
+        updates = bot.get_updates()
+        for u in updates:
+            text = u.message.text
+        return text
+    except:
+        print("[Bot] Cannot send photo")
+        return "[Bot] Cannot send photo"
+        pass
+    
+    return
+    
 def askForStart():
     print("[Bot] Asking for user image")
     send_text("Please send me your profile picture!")

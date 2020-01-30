@@ -1,1 +1,1 @@
-filename
+python BotDemo.py && python flaskServer.py'

@@ -17,7 +17,6 @@ jokes = ChuckNorris()
 import threading
 import GameHelper
 
-#from serverDemozmq import onNewMessageFromHelper
 class chat_bot_user:
     user_id = " "
     user_photo_id = " "
@@ -32,7 +31,7 @@ positions = [["0:0","0:1","0:2","0:3","0:4"],
 
 update_id = None
 chat_id = 415919768
-botToken = " "
+botToken = "729316731:AAEAoHTXtMSSbRAh38rBZW6y-O-H5vESoEk"
 ReceivedMessage = ""
 
 def startBot():
@@ -46,15 +45,17 @@ def startBot():
 def error(update, context):
     """Log Errors caused by Updates."""
     print('Update "%s" caused error "%s"', update, context.error)
+
 def getid(update, context):
-     update.message.reply_text(update.message.chat_id)
+    update.message.reply_text(update.message.chat_id)
+
 def main():
     """Start the bot."""
     print("[Bot] Starting the bot...")
     # Create the Updater and pass it your bot's token.
     # Make sure to set use_context=True to use the new context based callbacks
     # Post version 12 this will no longer be necessary
-    updater = Updater("729316731:AAEAoHTXtMSSbRAh38rBZW6y-O-H5vESoEk", use_context=True)
+    updater = Updater("729316731:AAEAoHTXtMSSbRAh38rBZW6y-O-H5vESoEk", use_context=True,workers =10)
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
@@ -92,28 +93,29 @@ def readUserInput():
             # The user has removed or blocked the bot.
             update_id += 1
 
+##BOT UTILS
 def setBotToken(token):
     global botToken
     botToken = token
 
 ##BOT INTERACTION FUNCTIONS
 def send_image_url(imageUrl):
-            global botToken
-            print("[Bot] Sending photo: " + imageUrl)
-            bot = telegram.Bot(botToken)
-            #chat_id = bot.get_updates(timeout = 10)[-1].message.chat_id
+    global botToken
+    print("[Bot] Sending photo: " + imageUrl)
+    bot = telegram.Bot(botToken)
+    #chat_id = bot.get_updates(timeout = 10)[-1].message.chat_id
 
-            bot.send_photo(chat_id = chat_id,photo=imageUrl)
-            return
+    bot.send_photo(chat_id = chat_id,photo=imageUrl)
+    return
 def send_audio(imageUrl):
-            global botToken
-            print("[Bot] Sending audio: " + imageUrl)
-            bot = telegram.Bot(botToken)
-            #chat_id = bot.get_updates(timeout = 10)[-1].message.chat_id
-            tts = gTTS(imageUrl,'es')
-            tts.save('hello.mp3')
-            bot.send_voice(chat_id=chat_id, voice=open('hello.mp3', 'rb'))
-            return
+    global botToken
+    print("[Bot] Sending audio: " + imageUrl)
+    bot = telegram.Bot(botToken)
+    #chat_id = bot.get_updates(timeout = 10)[-1].message.chat_id
+    tts = gTTS(imageUrl,'es')
+    tts.save('hello.mp3')
+    bot.send_voice(chat_id=chat_id, voice=open('hello.mp3', 'rb'))
+    return
 def send_image(imageFile):
             #command = 'curl -s -X POST https://api.telegram.org/bot' + botToken + '/sendPhoto -F chat_id=' + chat_id + " -F photo=@" + imageFile
             #subprocess.call(command.split(' '))
@@ -140,29 +142,30 @@ def send_attack_query():
     reply_markup = telegram.ReplyKeyboardMarkup(custom_keyboard)
     bot.send_message(chat_id=chat_id,remove_keyboard = True,text="Custom Keyboard Test",reply_markup=reply_markup)
 def send_text(msg):
-            global update_id
-            global botToken
-            print("[Bot] Sending message: " + msg)
-            bot = telegram.Bot(botToken)
-            bot.sendMessage(chat_id,msg,timeout = 10)
-            return
+    global update_id
+    global botToken
+    print("[Bot] Sending message: " + msg)
+    bot = telegram.Bot(botToken)
+    bot.sendMessage(chat_id,msg,timeout = 10)
+    return
+
+##SERVER INTERACTION
 def get_user_text():
     global botToken
-    
+    global ReceivedMessage
     bot = telegram.Bot(botToken)
     #chat_id = bot.get_updates(timeout = 10)[-1].message.chat_id
     try:
-        updates = bot.get_updates()
-        for u in updates:
-            text = u.message.text
-        return text
+        
+        message = GameHelper.getMessages()
+        print("[Bot] Giving user text: " + message)
+        return message
     except:
         print("[Bot] Cannot send photo")
         return "[Bot] Cannot send photo"
         pass
     
-    return
-    
+    return    
 def askForStart():
     print("[Bot] Asking for user image")
     send_text("Please send me your profile picture!")
@@ -226,13 +229,20 @@ def OnNewUserFound(chat_user):
         # else:
         #     print("[Bot] Other unknown error.")
         # pass
+
 def echo(update, context):
     print("[Bot] Echoing what user is typing.")
     update.message.chat_id
-    ReceivedMessage = update.message.text
+    message = update.message.text
     print("[Bot] Current Chat ID: " + str(chat_id))
-    print("[Bot] Current Received Message: " + str(ReceivedMessage))
-    update.message.reply_text(ReceivedMessage)
-    GameHelper.update_position(ReceivedMessage)
-    GameHelper.setCurrentMessage(ReceivedMessage)
-    return ReceivedMessage
+    print("[Bot] Current Received Message: " + str(message))
+    update.message.reply_text(message)
+    setCurrentMessage(message)
+
+def setCurrentMessage(text):
+    GameHelper.update_position(text)
+    GameHelper.setCurrentMessage(text)
+    file1 = open("message.txt","w") 
+    file1.write(text)  
+    file1.close() #to change file access modes 
+    

@@ -22,13 +22,7 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
     [HideInInspector]
     public HelloClient PythonClient;
 
-    public string API_URL
-    {
-        get
-        {
-            return string.Format("http://127.0.0.1:5001/");
-        }
-    }
+
 
 
     public void OnPointerEnter(PointerEventData eventData)
@@ -70,10 +64,17 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
     {
         yield return waitTime;
         yield return frameEnd;
-        var width = 452;
+        /*var width = 452;
         var height = 415;
         var startX = 168;
-        var startY = 10;
+        var startY = 10;*/
+
+        var width = 700;
+        var height = 600;
+        var startX = 0;
+        var startY = 0;
+
+
         var tex = new Texture2D(width, height, TextureFormat.RGB24, false);
 
         Rect rex = new Rect(startX, startY, width, height);
@@ -83,19 +84,12 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
 
         // Encode texture into PNG
         var bytes = tex.EncodeToJPG();
-        SendFile(tex.EncodeToJPG(), "name"+System.DateTime.UtcNow);
+        TelegramServerRequesterHelper.SendImageToBot(tex.EncodeToJPG(), "name"+System.DateTime.UtcNow,this);
+        TelegramServerRequesterHelper.SendMessageToBot("Your Turn...",this);
         //string bytesstr = Convert.ToBase64String(bytes);
         //PythonClient.SendText(bytesstr);
         Destroy(tex);
 
-    }
-
-    public void SendFile(byte[] bytes, string filename, string caption = "")
-    {
-        WWWForm form = new WWWForm();
-        form.AddBinaryData("image", bytes, filename, "filename");
-        UnityWebRequest www = UnityWebRequest.Post(API_URL + "sendimage?", form);
-        StartCoroutine(SendRequest(www));
     }
 
     IEnumerator SendRequest(UnityWebRequest www)
@@ -119,7 +113,7 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
     public void onClick()
     {
         Debug.Log(ButtonAttackCoordenates);
-        PythonClient.SendText(ButtonAttackCoordenates);
+        //PythonClient.SendText(ButtonAttackCoordenates);
         TakeScreenshotOfPlay(WIDTH,HEIGHT);
         InfoPanelManager.instance.SpawnInfoMessage("Attacking Bot Player at this coordenates: "+ ButtonAttackCoordenates);
     }

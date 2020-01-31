@@ -6,6 +6,7 @@ using UnityEngine.EventSystems;
 using System.IO;
 using System;
 using UnityEngine.Networking;
+using M2MqttUnity.Examples;
 
 public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
 {
@@ -19,8 +20,8 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
     public Text positionText;
     public Sprite BGon;
     public Sprite BGoff;
-    [HideInInspector]
-    public HelloClient PythonClient;
+    /*[HideInInspector]
+    public HelloClient PythonClient;*/
 
 
 
@@ -86,8 +87,9 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
         var bytes = tex.EncodeToJPG();
         TelegramServerRequesterHelper.SendImageToBot(tex.EncodeToJPG(), "name"+System.DateTime.UtcNow,this);
         TelegramServerRequesterHelper.SendMessageToBot("Your Turn...",this);
-        //string bytesstr = Convert.ToBase64String(bytes);
-        //PythonClient.SendText(bytesstr);
+        TelegramServerRequesterHelper.SendAudioToBot("Your Turn...", this);
+        GameManager.instance.ShouldChangeTurnToBot(false);
+        //TelegramServerRequesterHelper.GetMessageFromBot(this);
         Destroy(tex);
 
     }
@@ -112,7 +114,7 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
 
     public void onClick()
     {
-        Debug.Log(ButtonAttackCoordenates);
+        Debug.Log("Attacking bot at this coordenates: " + ButtonAttackCoordenates);
         //PythonClient.SendText(ButtonAttackCoordenates);
         TakeScreenshotOfPlay(WIDTH,HEIGHT);
         InfoPanelManager.instance.SpawnInfoMessage("Attacking Bot Player at this coordenates: "+ ButtonAttackCoordenates);

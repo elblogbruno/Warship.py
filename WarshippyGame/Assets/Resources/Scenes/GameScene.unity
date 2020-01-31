@@ -615,7 +615,7 @@ GameObject:
   - component: {fileID: 233231048}
   - component: {fileID: 233231047}
   m_Layer: 0
-  m_Name: HelloClientObject
+  m_Name: MQTTClient
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -630,10 +630,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 233231046}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e897de29c30c9ea4b8ec52c74328904a, type: 3}
+  m_Script: {fileID: 11500000, guid: 42606724d4e1dc342b916ff748556e0e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  message: 
+  brokerAddress: 127.0.0.1
+  brokerPort: 1883
+  isEncrypted: 0
+  connectionDelay: 500
+  timeoutOnConnection: 30000
+  autoConnect: 1
+  mqttUserName: 
+  mqttPassword: 
+  autoTest: 0
 --- !u!4 &233231048
 Transform:
   m_ObjectHideFlags: 0
@@ -643,10 +651,10 @@ Transform:
   m_GameObject: {fileID: 233231046}
   m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
   m_LocalPosition: {x: 0, y: 3, z: 0}
-  m_LocalScale: {x: 1, y: 1.0000001, z: 0.99999994}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 8
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &262838073
 PrefabInstance:
@@ -1850,7 +1858,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 7
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &768637727
 GameObject:
@@ -1944,7 +1952,7 @@ RectTransform:
   m_Children:
   - {fileID: 693973288}
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -2076,7 +2084,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 8
+  m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &897318885
 GameObject:
@@ -2650,7 +2658,7 @@ RectTransform:
   m_Children:
   - {fileID: 1309722649}
   m_Father: {fileID: 0}
-  m_RootOrder: 6
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -2751,7 +2759,7 @@ RectTransform:
   - {fileID: 2131160776}
   - {fileID: 1980659266}
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -3568,7 +3576,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 5
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!224 &1980659266 stripped
 RectTransform:
@@ -3617,6 +3625,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4649d3592ef8b064b8e29dbe00fa8064, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mqttClient: {fileID: 233231047}
+  gameState: 0
 --- !u!4 &2066959333
 Transform:
   m_ObjectHideFlags: 0
@@ -3685,7 +3695,6 @@ MonoBehaviour:
   WaterImage: {fileID: 21300000, guid: 5f1434b37ca0bad4da7ca8c8ccac13f5, type: 3}
   ButtonTemplate: {fileID: 1980659268}
   coordenates: []
-  HelloClient: {fileID: 233231047}
 --- !u!114 &2131160778
 MonoBehaviour:
   m_ObjectHideFlags: 0

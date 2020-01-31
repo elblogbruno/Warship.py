@@ -33,7 +33,7 @@ public class SoundManager : MonoBehaviour
     //Used to play single sound clips.
     public void PlaySingle(SoundType id)
     {
-        Debug.Log("PLAYING SOUND WITH ID " + (int)id);
+       // Debug.Log("PLAYING SOUND WITH ID " + (int)id);
         //Set the clip of our efxSource audio source to the clip passed in as a parameter.
         musicSource.clip = ListOfAudios[(int)id];
 

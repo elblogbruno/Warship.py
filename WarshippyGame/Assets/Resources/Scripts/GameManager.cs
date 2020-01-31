@@ -1,11 +1,48 @@
-﻿using System.Collections;
+﻿using M2MqttUnity.Examples;
+using System.Collections;
 
 using UnityEngine;
 
 using UnityEngine.SceneManagement;
 
+public enum GameState
+{
+    UserAttacking = 0,
+    BotAttacking = 1,
+    UserWon = 2,
+    BotWon = 3,
+}
+
 public class GameManager : MonoBehaviour
 {
+    public MqttClient mqttClient;
+    public GameState gameState;
+    string botPosition ,oldPosition;
+    public static GameManager instance = null;
+    public void Awake()
+    {
+        //Check if there is already an instance of SoundManager
+        if (instance == null)
+            //if not, set it to this.
+            instance = this;
+        //If instance already exists:
+        else if (instance != this)
+            //Destroy this, this enforces our singleton pattern so there can only be one instance of SoundManager.
+            Destroy(gameObject);
+        mqttClient.onNewMessageMQTT += onNewMessage;
+    }
+    public void SetBotAttackPosition(string pos)
+    {
+        botPosition = pos;
+    }
+    public GameState GetGameState()
+    {
+        return gameState;
+    }
+    public void SetGameState(GameState state)
+    {
+        gameState = state;
+    }
     // Start is called before the first frame update
     public void LoadGame()
     {
@@ -15,7 +52,36 @@ public class GameManager : MonoBehaviour
     {
         Application.Quit();
     }
-    
+    public void onNewMessage(string message)
+    {
+        Debug.Log("[GameManager] New Message: " + message);
+        ShouldChangeTurnToBot(true);
+    }
+    private void Update()
+    {
+        if(gameState == GameState.BotAttacking)
+        {
+            //Debug.Log("Bot Torn");
+        }
+        else if(gameState == GameState.UserAttacking)
+        {
+            //Debug.Log("User Torn");
+        }
+    }
+    public void ShouldChangeTurnToBot(bool should)
+    {
+        if (should)
+        {
+            gameState = GameState.BotAttacking;
+            Debug.Log("Bot Torn");
+        }
+        else
+        {
+            gameState = GameState.UserAttacking;
+            Debug.Log("User Torn");
+        }
+        
+    }
     public void ReturnMenu()
     {
         StartCoroutine(LoadYourAsyncScene("InitialMenu"));

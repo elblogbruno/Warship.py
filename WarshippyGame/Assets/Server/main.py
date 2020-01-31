@@ -15,4 +15,3 @@ if args.bot:
 if args.server:
     print("Starting server.")
     flaskServer.startServer()
-    

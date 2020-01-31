@@ -13,6 +13,7 @@ from werkzeug.utils import secure_filename
 import GameHelper
 import threading
 import BotDemo as bot
+import json
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 oldCoordenates = " "
 chat_id = 415919768
@@ -35,7 +36,7 @@ def upload_file():
         filename = secure_filename(file.filename)+".jpg"
         print(filename)
         file.save(filename)
-        #bot.send_image(filename)
+        bot.send_image(filename)
     return filename
 @app.route("/sendmessage")
 def sendmessage():
@@ -49,9 +50,11 @@ def sendaudio():
     return q
 @app.route("/getmessage")
 def getmessage():
-    file1 = open("message.txt","r") 
-    q = file1.read() 
-    print("Getting message: "+ q)
+    # file1 = open("message.txt","r") 
+    # q = file1.read() 
+    with open('message.txt') as json_file:
+        q = json.load(json_file)
+    print("Getting message: "+ str(q))
     return q
 @app.route('/', methods=['GET', 'POST'])
 def handle_request():

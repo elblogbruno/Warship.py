@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
+using uPLibrary.Networking.M2Mqtt;
+using uPLibrary.Networking.M2Mqtt.Messages;
+using M2MqttUnity;
 
 public static class TelegramServerRequesterHelper
 {
@@ -16,23 +19,27 @@ public static class TelegramServerRequesterHelper
     // Start is called before the first frame update
     public static void SendMessageToBot(string message, MonoBehaviour instance)
     {
-       instance.StartCoroutine(SendMessage(message));
+       instance.StartCoroutine(SendMessage(message,false));
     }
-
     // Start is called before the first frame update
-    public static void GetMessageFromBot(string message, MonoBehaviour instance)
+    public static void SendAudioToBot(string message, MonoBehaviour instance)
     {
-        instance.StartCoroutine(GetMessage(message));
+        instance.StartCoroutine(SendMessage(message,true));
+    }
+    // Start is called before the first frame update
+    public static void GetMessageFromBot(MonoBehaviour instance)
+    {
+        instance.StartCoroutine(GetMessage());
     }
     // Start is called before the first frame update
     public static void SendImageToBot(byte[] bytes, string filename, MonoBehaviour instance)
     {
         SendImageRequest(bytes,filename,instance);
     }
-
-    static IEnumerator GetMessage(string message)
+    
+    static IEnumerator GetMessage()
     {
-        UnityWebRequest www = UnityWebRequest.Get(API_URL + "getmessage?text=" + message);
+        UnityWebRequest www = UnityWebRequest.Get(API_URL + "getmessage");
         Debug.Log(www.url);
         yield return www.SendWebRequest();
         if (www.isNetworkError)
@@ -42,16 +49,21 @@ public static class TelegramServerRequesterHelper
         else
         {
             // Show results as text
-            Debug.Log(www.downloadHandler.text);
-
-            // Or retrieve results as binary data
+            Debug.Log("Message from user: " + www.downloadHandler.text);
+            GameManager.instance.SetGameState(GameState.BotAttacking);
+            GameManager.instance.SetBotAttackPosition(www.downloadHandler.text);
             byte[] results = www.downloadHandler.data;
         }
     }
 
-    static IEnumerator SendMessage(string message)
+    static IEnumerator SendMessage(string message,bool isAudio)
     {
-            UnityWebRequest www = UnityWebRequest.Get(API_URL + "sendmessage?text="+message);
+        string query = "sendmessage";
+        if (isAudio)
+        {
+            query = "sendaudio";
+        }
+            UnityWebRequest www = UnityWebRequest.Get(API_URL + query+ "?text="+message);
             yield return www.SendWebRequest();
             if (www.isNetworkError)
             {
@@ -60,15 +72,12 @@ public static class TelegramServerRequesterHelper
             else
             {
                 // Show results as text
-                Debug.Log(www.downloadHandler.text);
+                //Debug.Log(www.downloadHandler.text);
 
                 // Or retrieve results as binary data
                 byte[] results = www.downloadHandler.data;
             }
     }
-
-
-
     static void SendImageRequest(byte[] bytes, string filename, MonoBehaviour instance)
     {
         WWWForm form = new WWWForm();
@@ -86,7 +95,7 @@ public static class TelegramServerRequesterHelper
         else
         {
             var w = www;
-            Debug.Log("Success!\n" + www.downloadHandler.text);
+            Debug.Log("Success sending table photo!\n" + www.downloadHandler.text);
         }
     }
 }

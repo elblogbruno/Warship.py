@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+import json
 import logging
 import telegram
 from telegram.error import NetworkError, Unauthorized
@@ -16,11 +16,16 @@ import base64
 jokes = ChuckNorris()
 import threading
 import GameHelper
-
+import ssl
+import sys
+ 
+import paho.mqtt.client
 class chat_bot_user:
     user_id = " "
     user_photo_id = " "
     user_name = " "
+
+client = paho.mqtt.client.Client()
 
 
 positions = [["0:0","0:1","0:2","0:3","0:4"],
@@ -48,6 +53,14 @@ def error(update, context):
 
 def getid(update, context):
     update.message.reply_text(update.message.chat_id)
+def on_connect(client, userdata, flags, rc):
+    print('connected (%s)' % client._client_id)
+    client.subscribe(topic='BOT', qos=2)
+def on_message(client, userdata, message):
+    print('------------------------------')
+    print('topic: %s' % message.topic)
+    print('payload: %s' % message.payload)
+    print('qos: %d' % message.qos)
 
 def main():
     """Start the bot."""
@@ -77,9 +90,11 @@ def main():
     # SIGTERM or SIGABRT. This should be used most of the time, since
     # start_polling() is non-blocking and will stop the bot gracefully.
     #startBot()
+    global client
+    client.connect(host='127.0.0.1', port=1883)
     print("[Bot] Bot started...")
     updater.idle()
-    
+
 
 def readUserInput():
     global update_id
@@ -112,7 +127,7 @@ def send_audio(imageUrl):
     print("[Bot] Sending audio: " + imageUrl)
     bot = telegram.Bot(botToken)
     #chat_id = bot.get_updates(timeout = 10)[-1].message.chat_id
-    tts = gTTS(imageUrl,'es')
+    tts = gTTS(imageUrl,'en')
     tts.save('hello.mp3')
     bot.send_voice(chat_id=chat_id, voice=open('hello.mp3', 'rb'))
     return
@@ -156,10 +171,11 @@ def get_user_text():
     bot = telegram.Bot(botToken)
     #chat_id = bot.get_updates(timeout = 10)[-1].message.chat_id
     try:
-        
-        message = GameHelper.getMessages()
-        print("[Bot] Giving user text: " + message)
-        return message
+        with open('message.txt') as json_file:
+            data = json.load(json_file)
+        #message = GameHelper.getMessages()
+        print("[Bot] Giving user text: " + data)
+        return data
     except:
         print("[Bot] Cannot send photo")
         return "[Bot] Cannot send photo"
@@ -242,7 +258,9 @@ def echo(update, context):
 def setCurrentMessage(text):
     GameHelper.update_position(text)
     GameHelper.setCurrentMessage(text)
-    file1 = open("message.txt","w") 
-    file1.write(text)  
-    file1.close() #to change file access modes 
+    client.publish("BOT", text)
+    # data = {'message': text, 'has_attacked': 'true'}
+    # with open('message.txt', 'w') as outfile:
+    #     json.dump(data, outfile)
+
     

@@ -8,6 +8,13 @@ using System;
 using UnityEngine.Networking;
 using M2MqttUnity.Examples;
 
+public enum ButtonState
+{
+    Water = 0,
+    Ship = 1,
+    ShipDown = 2,
+    WaterDown = 3,
+}
 public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
 {
     #region Const
@@ -15,22 +22,66 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
     int WIDTH = 452;
         int HEIGHT = 415;
     #endregion
+    
     public string ButtonAttackCoordenates;
     public Image ButtonGridImage;
     public Text positionText;
+    public bool hasHiddenShip;
     public Sprite BGon;
     public Sprite BGoff;
+    [Header("Type of boats.")]
+    public Sprite WaterSprite;
+    public Sprite ShipSprite;
+    public Sprite ShipDownSprite;
+    public Sprite WaterDown;
+    public Sprite IdleSprite;
+
+
     /*[HideInInspector]
     public HelloClient PythonClient;*/
 
+    public ButtonState _currentButtonState;
 
-
-
+    public string getCoordenates()
+    {
+        return ButtonAttackCoordenates;
+    }
+    public void UpdateState(ButtonState state)
+    {
+        Sprite CurrentSprite = IdleSprite;
+        switch (state)
+        {
+            case ButtonState.Water:
+                CurrentSprite = WaterSprite;
+                break;
+            case ButtonState.Ship:
+                CurrentSprite = ShipSprite;
+                break;
+            case ButtonState.ShipDown:
+                CurrentSprite = ShipDownSprite;
+                break;
+            case ButtonState.WaterDown:
+                CurrentSprite = WaterDown;
+                break;
+            default:
+                break;
+        }
+        ButtonGridImage.sprite = CurrentSprite;
+    }
+    public bool hasGotHiddenShip()
+    {
+        return hasHiddenShip;
+    }
+    public void setHiddenShip(bool has)
+    {
+        hasHiddenShip = has;
+    }
     public void OnPointerEnter(PointerEventData eventData)
     {
         SoundManager.instance.PlaySingle(SoundManager.SoundType.BUTTON_SOUND);
     }
     public void setText(string text){
+        ButtonAttackCoordenates = text;
         positionText.text = text;
     }
     public void TakeScreenshotOfPlay(int width,int height)

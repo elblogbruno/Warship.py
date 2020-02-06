@@ -92,6 +92,7 @@ def main():
     #startBot()
     global client
     client.connect(host='127.0.0.1', port=1883)
+    client.on_disconnect = on_disconnect
     print("[Bot] Bot started...")
     updater.idle()
 
@@ -256,11 +257,21 @@ def echo(update, context):
     setCurrentMessage(message)
 
 def setCurrentMessage(text):
-    GameHelper.update_position(text)
+    isCorrect = GameHelper.update_position(text)
     GameHelper.setCurrentMessage(text)
-    client.publish("BOT", text)
+    if isCorrect:
+        client.publish("BOT", text)
+        print("[BotDemo] Correct position.")
+    else:
+        print("[BotDemo] Not a correct position. Passing")
     # data = {'message': text, 'has_attacked': 'true'}
     # with open('message.txt', 'w') as outfile:
     #     json.dump(data, outfile)
 
-    
+def on_disconnect(client, userdata, rc):
+    if rc != 0:
+        print("Unexpected MQTT disconnection. Will auto-reconnect")
+        client.connect(host='127.0.0.1', port=1883)
+        send_text("There was an error. Please write that again!")
+if __name__ == "__main__":
+    main()

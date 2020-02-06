@@ -49,9 +49,15 @@ def update_position(pos):
                                 bot.send_text(msg)
                                 global coordenates
                                 coordenates = pos
+                                return True
                 else:
                         msg = "This position is not available, Please write a coordenate like this: 2:2 [x,y]"
                         bot.send_text(msg)
+                        return False
+                        
         else:
                 msg = "This position is not available, Please write a coordenate like this: 2:2 [x,y]"
                 bot.send_text(msg)
+                return False
+    else:
+            return False

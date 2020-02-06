@@ -55,6 +55,7 @@ public class GameManager : MonoBehaviour
     public void onNewMessage(string message)
     {
         Debug.Log("[GameManager] New Message: " + message);
+        botPosition = message;
         ShouldChangeTurnToBot(true);
     }
     private void Update()
@@ -73,12 +74,15 @@ public class GameManager : MonoBehaviour
         if (should)
         {
             gameState = GameState.BotAttacking;
-            Debug.Log("Bot Torn");
+            Debug.Log("[GameManager] Bot attacking at this position: "+ botPosition);
+            InfoPanelManager.instance.SpawnInfoMessage("Bot player is attacking you at this position: " + botPosition);
+            
+            ButtonGridSpawner.instance.attackAtPosition(botPosition);
         }
         else
         {
             gameState = GameState.UserAttacking;
-            Debug.Log("User Torn");
+            Debug.Log("User attacking");
         }
         
     }

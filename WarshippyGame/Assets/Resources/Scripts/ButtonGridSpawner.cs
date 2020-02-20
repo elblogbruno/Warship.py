@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 public class ButtonGridSpawner : MonoBehaviour
 {
+    
     public ButtonManifest[] ListOfButtons;
     public int NumOfButtonsToSpawn;
     public Sprite WaterImage;
@@ -25,8 +26,10 @@ public class ButtonGridSpawner : MonoBehaviour
     // Start is called before the first frame updateç
     int x = 0;
     int y = 0;
-    void Start()
+
+    public void StartGrid()
     {
+        
         //HelloClient.OnNewMessageReceived = OnNewMessageReceived;
         coordenates = new string[25];
         coordenates[0] = (0 + ":" + 0);
@@ -63,10 +66,21 @@ public class ButtonGridSpawner : MonoBehaviour
             ListOfButtons[i] = ButtonInstance;
             //ListOfButtons[i].PythonClient = HelloClient;
             bool randomBoolean = (Random.value > 0.5f);
+            Player randomButtonOwner = PlayersPanelControl.instance.getPlayer(Random.Range(0, 1));
             ListOfButtons[i].setHiddenShip(randomBoolean);
+            if (randomBoolean)
+            {
+                ListOfButtons[i].setButtonOwner(randomButtonOwner);
+                ListOfButtons[i].setText(randomButtonOwner.ToString());
+            }
+            else
+            {
+                ListOfButtons[i].setText(coordenates[i]);
+            }
             ListOfButtons[i].ButtonGridImage.sprite = WaterImage;
             ListOfButtons[i].ButtonAttackCoordenates = coordenates[i];
-            ListOfButtons[i].setText(coordenates[i]);
+            
+            //coordenates[i] + 
         }
     }
     private ButtonManifest getButtonByPosition(string pos)
@@ -88,16 +102,23 @@ public class ButtonGridSpawner : MonoBehaviour
     {
         ButtonManifest CurrentButton =  getButtonByPosition(pos);
         Debug.Log("[ButtonGridSpawner] Attacking at this position: " + pos);
+        Player CurrentPlayer = CurrentButton.getButtonOwner();
         if (CurrentButton.hasGotHiddenShip())
         {
+            InfoPanelManager.instance.SpawnInfoMessage("A ship by " + CurrentPlayer.name + " was turned down!");
+            TelegramServerRequesterHelper.SendMessageToBot("A ship by " + CurrentPlayer.name + " was turned down!", this);
             ButtonState state = ButtonState.ShipDown;
+            PlayersPanelControl.instance.setUserNumberOfBoats(CurrentPlayer, 3);
             CurrentButton.UpdateState(state);
         }
         else
         {
+            InfoPanelManager.instance.SpawnInfoMessage("You hit watter. What a dumb one!");
+            TelegramServerRequesterHelper.SendMessageToBot("You hit watter. What a dumb one!",this);
             ButtonState state = ButtonState.WaterDown;
             CurrentButton.UpdateState(state);
         }
+        CurrentButton.setButtonState(false);
         
     }
 }

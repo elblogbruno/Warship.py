@@ -778,7 +778,6 @@ GameObject:
   - component: {fileID: 537530510}
   - component: {fileID: 537530509}
   - component: {fileID: 537530511}
-  - component: {fileID: 537530512}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -798,6 +797,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4649d3592ef8b064b8e29dbe00fa8064, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mqttClient: {fileID: 0}
+  gameState: 0
 --- !u!4 &537530510
 Transform:
   m_ObjectHideFlags: 0
@@ -829,18 +830,6 @@ MonoBehaviour:
   LogoObject: {fileID: 1431583596}
   MemeObject: {fileID: 1640813182}
   RawImage: {fileID: 1053032679}
---- !u!114 &537530512
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 537530508}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 00145026de4f7bd4293b738148eb17f4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &641485591
 GameObject:
   m_ObjectHideFlags: 0

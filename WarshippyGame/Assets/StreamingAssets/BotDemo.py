@@ -244,6 +244,7 @@ def getImage(update, context):
         else:
             print("[Bot] There is no user photo yet.")
     else:
+        shouldGetImage = True
         print("[BOT] Not getting images")
 def echo(update, context):
     print("[Bot] Echoing what user is typing.")
@@ -269,9 +270,10 @@ def OnNewUserFound(chat_user):
             print("[Bot] Photo hasn't been downloaded")
             newFile = bot.get_file(chat_user.user_photo_id)
             newFile.download(custom_path='./'  + chat_user.user_photo_id +'.jpg')
-            print("[Bot] Downloading user picture...")
+            print("[Bot] Downloading user picture..." + chat_user.user_photo_id)
             send_text("Photo received succesfully!")
-            publishOnMqtt("./"+chat_user.user_photo_id+'.jpg')
+            publishOnMqtt(chat_user.user_photo_id+'.jpg')
+            publishOnMqtt("[NAME]" +chat_user.user_name)
             send_text("Welcome to warshippy {}! Let's get the war started! ".format(chat_user.user_name))
     except telegram.TelegramError as e:
         print ("[Bot] ERROR " + str(e))

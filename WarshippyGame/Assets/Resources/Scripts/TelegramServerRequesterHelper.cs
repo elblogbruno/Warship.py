@@ -32,11 +32,28 @@ public static class TelegramServerRequesterHelper
         instance.StartCoroutine(GetMessage());
     }
     // Start is called before the first frame update
+    public static void StartBotPhotoBehaviour(MonoBehaviour instance)
+    {
+        instance.StartCoroutine(AskForPhoto());
+    }
+    // Start is called before the first frame update
     public static void SendImageToBot(byte[] bytes, string filename, MonoBehaviour instance)
     {
         SendImageRequest(bytes,filename,instance);
     }
-    
+    static IEnumerator AskForPhoto()
+    {
+        UnityWebRequest www = UnityWebRequest.Get(API_URL + "askForPhoto");
+        Debug.Log(www.url);
+        yield return www.SendWebRequest();
+        if (www.isNetworkError)
+        {
+            Debug.Log(www.error);
+        }
+        else
+        {
+        }
+    }
     static IEnumerator GetMessage()
     {
         UnityWebRequest www = UnityWebRequest.Get(API_URL + "getmessage");

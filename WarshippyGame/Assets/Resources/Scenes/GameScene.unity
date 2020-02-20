@@ -784,6 +784,42 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 21300000, guid: 28ab49ad6f9c4f9408fa7b60c4b9fa85,
         type: 3}
+    - target: {fileID: 5097071103310683495, guid: 84892510011b9b64f82c2989a28e4c64,
+        type: 3}
+      propertyPath: WaterSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 5f1434b37ca0bad4da7ca8c8ccac13f5,
+        type: 3}
+    - target: {fileID: 5097071103310683495, guid: 84892510011b9b64f82c2989a28e4c64,
+        type: 3}
+      propertyPath: ShipSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: e681bce48fd84434e8b2a588d7fd1d35,
+        type: 3}
+    - target: {fileID: 5097071103310683495, guid: 84892510011b9b64f82c2989a28e4c64,
+        type: 3}
+      propertyPath: ShipDownSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 4aba6adf303aeaa4d9c307300244cf28,
+        type: 3}
+    - target: {fileID: 5097071103310683495, guid: 84892510011b9b64f82c2989a28e4c64,
+        type: 3}
+      propertyPath: WaterDown
+      value: 
+      objectReference: {fileID: 21300000, guid: a5a623021c8179e418af87d309246f88,
+        type: 3}
+    - target: {fileID: 5097071103310683495, guid: 84892510011b9b64f82c2989a28e4c64,
+        type: 3}
+      propertyPath: IdleSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: f32a7930ee8ee0a41bc9065091c93004,
+        type: 3}
+    - target: {fileID: 5097071103203721737, guid: 84892510011b9b64f82c2989a28e4c64,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 5f1434b37ca0bad4da7ca8c8ccac13f5,
+        type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 84892510011b9b64f82c2989a28e4c64, type: 3}
 --- !u!1 &301828821
@@ -2252,7 +2288,6 @@ GameObject:
   - component: {fileID: 982978923}
   - component: {fileID: 982978925}
   - component: {fileID: 982978924}
-  - component: {fileID: 982978926}
   m_Layer: 5
   m_Name: RightPanel
   m_TagString: Untagged
@@ -2318,20 +2353,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 982978922}
   m_CullTransparentMesh: 0
---- !u!114 &982978926
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 982978922}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3e1c5c1557af55f459c73a3e90e47baf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  PlayerImage: {fileID: 394430074}
-  PlayerName: {fileID: 533245288}
 --- !u!1 &1060593183
 GameObject:
   m_ObjectHideFlags: 0
@@ -3606,10 +3627,11 @@ GameObject:
   m_Component:
   - component: {fileID: 2066959333}
   - component: {fileID: 2066959332}
+  - component: {fileID: 2066959334}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
-  m_Icon: {fileID: 0}
+  m_Icon: {fileID: -964228994112308473, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
@@ -3627,6 +3649,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mqttClient: {fileID: 233231047}
   gameState: 0
+  gridSpawner: {fileID: 2131160777}
+  control: {fileID: 2066959334}
 --- !u!4 &2066959333
 Transform:
   m_ObjectHideFlags: 0
@@ -3641,6 +3665,37 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 9
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2066959334
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2066959331}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e1c5c1557af55f459c73a3e90e47baf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  onPlayersSpawned:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 2131160777}
+        m_MethodName: StartGrid
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  players1: []
+  PlayerImage: {fileID: 394430074}
+  PlayerName: {fileID: 533245288}
+  PlayerImage1: {fileID: 1624657961}
+  PlayerName1: {fileID: 897318887}
 --- !u!1 &2131160775
 GameObject:
   m_ObjectHideFlags: 0

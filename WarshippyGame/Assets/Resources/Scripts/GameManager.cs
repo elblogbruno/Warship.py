@@ -13,12 +13,15 @@ public enum GameState
     BotWon = 3,
 }
 
+
 public class GameManager : MonoBehaviour
 {
     public MqttClient mqttClient;
     public GameState gameState;
     string botPosition ,oldPosition;
     public static GameManager instance = null;
+    public ButtonGridSpawner gridSpawner;
+    public PlayersPanelControl control;
     public void Awake()
     {
         //Check if there is already an instance of SoundManager
@@ -29,7 +32,16 @@ public class GameManager : MonoBehaviour
         else if (instance != this)
             //Destroy this, this enforces our singleton pattern so there can only be one instance of SoundManager.
             Destroy(gameObject);
+        if(mqttClient != null)
         mqttClient.onNewMessageMQTT += onNewMessage;
+       
+    }
+    private void Start()
+    {
+        Debug.Log("Starting Game...");
+        TelegramServerRequesterHelper.StartBotPhotoBehaviour(this);
+        //gridSpawner.StartGrid();
+        //control.spawnUsers();
     }
     public void SetBotAttackPosition(string pos)
     {
@@ -43,20 +55,27 @@ public class GameManager : MonoBehaviour
     {
         gameState = state;
     }
-    // Start is called before the first frame update
-    public void LoadGame()
-    {
-        StartCoroutine(LoadYourAsyncScene("UserAskInfoScreen"));
-    }
-    public void ExitGame()
-    {
-        Application.Quit();
-    }
+
     public void onNewMessage(string message)
     {
         Debug.Log("[GameManager] New Message: " + message);
-        botPosition = message;
-        ShouldChangeTurnToBot(true);
+        if (message.Contains("jpg"))
+        {
+            Debug.Log("[GameManager] Saving bot photo uri: " + message);
+            PlayerPrefs.SetString("photo-uri-bot", message);
+            PlayersPanelControl.instance.spawnUsers();
+
+        }else if (message.Contains("[NAME]"))
+        {
+            Debug.Log("[GameManager] Saving bot username: " + message);
+            PlayerPrefs.SetString("username-bot", message);
+        }
+        else
+        {
+            botPosition = message;
+            ShouldChangeTurnToBot(true, botPosition);
+        }
+        
     }
     private void Update()
     {
@@ -69,22 +88,45 @@ public class GameManager : MonoBehaviour
             //Debug.Log("User Torn");
         }
     }
-    public void ShouldChangeTurnToBot(bool should)
+
+
+    public void ShouldChangeTurnToBot(bool should,string position)
     {
         if (should)
         {
-            gameState = GameState.BotAttacking;
-            Debug.Log("[GameManager] Bot attacking at this position: "+ botPosition);
-            InfoPanelManager.instance.SpawnInfoMessage("Bot player is attacking you at this position: " + botPosition);
-            
-            ButtonGridSpawner.instance.attackAtPosition(botPosition);
+            if(position != null){
+                gameState = GameState.BotAttacking;
+                Debug.Log("[GameManager] Bot attacking at this position: " + position);
+                InfoPanelManager.instance.SpawnInfoMessage("Bot player is attacking you at this position: " + position);
+                ButtonGridSpawner.instance.attackAtPosition(position);
+            }
+            else
+            {
+                TelegramServerRequesterHelper.SendMessageToBot("There was an error. Please write that again!", this);
+            }   
         }
         else
         {
-            gameState = GameState.UserAttacking;
-            Debug.Log("User attacking");
+            if(position != null)
+            {
+                gameState = GameState.UserAttacking;
+                InfoPanelManager.instance.SpawnInfoMessage("Attacking bot at this position: " + position);
+                ButtonGridSpawner.instance.attackAtPosition(position);
+            }
         }
         
+    }
+
+
+    #region SceneManagement
+    // Start is called before the first frame update
+    public void LoadGame()
+    {
+        StartCoroutine(LoadYourAsyncScene("UserAskInfoScreen"));
+    }
+    public void ExitGame()
+    {
+        Application.Quit();
     }
     public void ReturnMenu()
     {
@@ -105,4 +147,5 @@ public class GameManager : MonoBehaviour
             yield return null;
         }
     }
+    #endregion
 }

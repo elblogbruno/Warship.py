@@ -35,13 +35,13 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
     public Sprite ShipDownSprite;
     public Sprite WaterDown;
     public Sprite IdleSprite;
-
+    public Player _currentPlayer;
 
     /*[HideInInspector]
     public HelloClient PythonClient;*/
 
     public ButtonState _currentButtonState;
-
+    
     public string getCoordenates()
     {
         return ButtonAttackCoordenates;
@@ -75,6 +75,18 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
     public void setHiddenShip(bool has)
     {
         hasHiddenShip = has;
+    }
+    public Player getButtonOwner()
+    {
+        return _currentPlayer;
+    }
+    public void setButtonOwner(Player playerType)
+    {
+        _currentPlayer = playerType;
+    }
+    public void setButtonState(bool state)
+    {
+        this.GetComponent<Button>().interactable = state;
     }
     public void OnPointerEnter(PointerEventData eventData)
     {
@@ -139,7 +151,7 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
         TelegramServerRequesterHelper.SendImageToBot(tex.EncodeToJPG(), "name"+System.DateTime.UtcNow,this);
         TelegramServerRequesterHelper.SendMessageToBot("Your Turn...",this);
         TelegramServerRequesterHelper.SendAudioToBot("Your Turn...", this);
-        GameManager.instance.ShouldChangeTurnToBot(false);
+        GameManager.instance.ShouldChangeTurnToBot(false, ButtonAttackCoordenates);
         //TelegramServerRequesterHelper.GetMessageFromBot(this);
         Destroy(tex);
 

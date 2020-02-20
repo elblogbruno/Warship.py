@@ -19,7 +19,7 @@ public class InfoPanelManager : MonoBehaviour
         else if (instance != this)
             //Destroy this, this enforces our singleton pattern so there can only be one instance of SoundManager.
             Destroy(gameObject);
-
+        Debug.Log("Info panel manager");
         //Set SoundManager to DontDestroyOnLoad so that it won't be destroyed when reloading our scene.
         //DontDestroyOnLoad(gameObject);
     }

@@ -17,16 +17,20 @@ namespace M2MqttUnity.Examples
 {
     public class MqttClient : M2MqttUnityClient
     {
+        const string BOT_TOPIC = "BOT";
+        const string BOT_TOPIC_IMAGE = "IMAGE";
+
         [Tooltip("Set this to true to perform a testing cycle automatically on startup")]
         public bool autoTest = false;
 
         public UnityAction<string> onNewMessageMQTT;
+        public UnityAction<string> onNewMessageMQTTImage;
         private List<string> eventMessages = new List<string>();
         private bool updateUI = false;
 
         public void TestPublish()
         {
-            client.Publish("BOT", System.Text.Encoding.UTF8.GetBytes("Test message"), MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE, false);
+            client.Publish(BOT_TOPIC, System.Text.Encoding.UTF8.GetBytes("Test message"), MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE, false);
             Debug.Log("Test message published");
         }
 
@@ -71,12 +75,14 @@ namespace M2MqttUnity.Examples
 
         protected override void SubscribeTopics()
         {
-            client.Subscribe(new string[] { "BOT" }, new byte[] { MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE });
+            client.Subscribe(new string[] { BOT_TOPIC }, new byte[] { MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE });
+            client.Subscribe(new string[] { BOT_TOPIC_IMAGE }, new byte[] { MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE });
         }
 
         protected override void UnsubscribeTopics()
         {
-            client.Unsubscribe(new string[] { "BOT" });
+            client.Unsubscribe(new string[] { BOT_TOPIC });
+            client.Unsubscribe(new string[] { BOT_TOPIC_IMAGE });
         }
 
         protected override void OnConnectionFailed(string errorMessage)
@@ -111,13 +117,15 @@ namespace M2MqttUnity.Examples
             string msg = System.Text.Encoding.UTF8.GetString(message);
             Debug.Log("[MQTT CLIENT] Received: " + msg);
             StoreMessage(msg);
-            if (topic == "M2MQTT_Unity/test")
+            if (topic == BOT_TOPIC_IMAGE)
             {
-                if (autoTest)
-                {
-                    autoTest = false;
-                    Disconnect();
-                }
+                if(onNewMessageMQTTImage != null)
+                onNewMessageMQTTImage(msg);
+            }
+            else if(topic == BOT_TOPIC)
+            {
+                if (onNewMessageMQTT != null)
+                    onNewMessageMQTT(msg);
             }
         }
 
@@ -136,7 +144,7 @@ namespace M2MqttUnity.Examples
                 foreach (string msg in eventMessages)
                 {
                     //ProcessMessage(msg);
-                    onNewMessageMQTT(msg);
+                    //onNewMessageMQTT(msg);
                 }
                 eventMessages.Clear();
             }

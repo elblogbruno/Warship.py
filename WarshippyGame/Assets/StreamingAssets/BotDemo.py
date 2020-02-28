@@ -38,8 +38,11 @@ chat_id = 415919768
 botToken = "729316731:AAEAoHTXtMSSbRAh38rBZW6y-O-H5vESoEk"
 ReceivedMessage = ""
 shouldGetImage = True
+isMqttConnected = True
 def publishOnMqtt(text):
     client.publish("BOT", text)
+def publishOnMqttImage(text):
+    client.publish("IMAGE", text)
 def startBot():
     # w = threading.Thread(target=startEcho)
     # w.start()
@@ -51,7 +54,8 @@ def startBot():
 def error(update, context):
     """Log Errors caused by Updates."""
     print('Update "%s" caused error "%s"', update, context.error)
-
+def gethelp(update, context):
+    update.message.reply_text("Use /getid to get chat id.")
 def getid(update, context):
     update.message.reply_text(update.message.chat_id)
 def on_connect(client, userdata, flags, rc):
@@ -76,7 +80,7 @@ def main():
 
     # # on different commands - answer in Telegram
     dp.add_handler(CommandHandler("getid", getid))
-    # dp.add_handler(CommandHandler("help", help))
+    dp.add_handler(CommandHandler("gethelp", gethelp))
 
     # on noncommand i.e message - echo the message on Telegram
     dp.add_handler(MessageHandler(Filters.text, echo))
@@ -231,7 +235,7 @@ def getImage(update, context):
     photo = update.message.photo
     user = update.message.from_user
     global shouldGetImage
-    if shouldGetImage:
+    if shouldGetImage and isMqttConnected:
         if user:
             new_chat_user.user_name = user.username
             new_chat_user.user_id = user['id'] 
@@ -244,8 +248,8 @@ def getImage(update, context):
         else:
             print("[Bot] There is no user photo yet.")
     else:
-        shouldGetImage = True
-        print("[BOT] Not getting images")
+        send_text("There was an error with MQTT retrying....")
+        askForStart()
 def echo(update, context):
     print("[Bot] Echoing what user is typing.")
     chat_id = update.message.chat_id
@@ -267,13 +271,13 @@ def OnNewUserFound(chat_user):
             send_text("Photo received succesfully!")
             send_text("Welcome to warshippy {}! Let's get the war started! ".format(chat_user.user_name))
         else:
-            print("[Bot] Photo hasn't been downloaded")
+            print("[Bot] Photo hasn't been downloaded yet. Should start downloading now.")
             newFile = bot.get_file(chat_user.user_photo_id)
             newFile.download(custom_path='./'  + chat_user.user_photo_id +'.jpg')
             print("[Bot] Downloading user picture..." + chat_user.user_photo_id)
             send_text("Photo received succesfully!")
-            publishOnMqtt(chat_user.user_photo_id+'.jpg')
-            publishOnMqtt("[NAME]" +chat_user.user_name)
+            publishOnMqttImage(chat_user.user_photo_id+'.jpg')
+            publishOnMqttImage(chat_user.user_name)
             send_text("Welcome to warshippy {}! Let's get the war started! ".format(chat_user.user_name))
     except telegram.TelegramError as e:
         print ("[Bot] ERROR " + str(e))
@@ -298,11 +302,17 @@ def setCurrentMessage(text):
     #     json.dump(data, outfile)
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        print("connected ok")
+        global isMqttConnected
+        print("[MQTT] Connected ok: " + isMqttConnected)
+        isMqttConnected = True
 def on_disconnect(client, userdata, rc):
     if rc != 0:
-        print("Unexpected MQTT disconnection. Will auto-reconnect")
+        global isMqttConnected
+        print("[MQTT] Unexpected MQTT disconnection. Will auto-reconnect")
+        print("[MQTT] isMqttConnected: " + isMqttConnected)
+
+        isMqttConnected = False
         client.connect(host='127.0.0.1', port=1883)
-        send_text("There was an error. Please write that again!")
-if __name__ == "__main__":
-    main()
+        send_text("There was an error. Please try again!")
+# if __name__ == "__main__":
+#     main()

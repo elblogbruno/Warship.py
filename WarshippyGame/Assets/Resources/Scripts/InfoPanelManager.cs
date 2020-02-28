@@ -31,6 +31,7 @@ public class InfoPanelManager : MonoBehaviour
         InfoText.text = message;
         this.gameObject.SetActive(true);
         PanelAnimator.Play("SlideIn");
+        CameraShake.instance.TriggerShake(3.0f);
     }
     void OnMessageEnd()
     {
@@ -39,6 +40,6 @@ public class InfoPanelManager : MonoBehaviour
     // Update is called once per frame
     void Start()
     {
-        SpawnInfoMessage("Welcome to Warship.py!");
+        //SpawnInfoMessage("Welcome to Warship.py!");
     }
 }

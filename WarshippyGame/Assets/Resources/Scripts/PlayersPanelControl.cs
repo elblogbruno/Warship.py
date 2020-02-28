@@ -16,7 +16,7 @@ public class PlayersPanelControl : MonoBehaviour
     public TMP_Text PlayerName;
     public RawImage PlayerImage1;
     public TMP_Text PlayerName1;
-
+    public GameObject PanelObject;
     public static PlayersPanelControl instance = null;
     public void Awake()
     {
@@ -28,13 +28,16 @@ public class PlayersPanelControl : MonoBehaviour
         else if (instance != this)
             //Destroy this, this enforces our singleton pattern so there can only be one instance of SoundManager.
             Destroy(gameObject);
+
+        PanelObject.SetActive(false);
     }
 
     public void spawnUsers()
     {
+        PanelObject.SetActive(true);
         string name = PlayerPrefs.GetString("PlayerName");
         string url = PlayerPrefs.GetString("PhotoURI");
-        string name1 = "BotPlayer";
+        string name1 = PlayerPrefs.GetString("username-bot");
         string url1 = Path.Combine(Application.streamingAssetsPath,PlayerPrefs.GetString("photo-uri-bot"));
         players = new List<Player>();
         players.Add(createUser(name, url, Player.PlayerType.PCUser));

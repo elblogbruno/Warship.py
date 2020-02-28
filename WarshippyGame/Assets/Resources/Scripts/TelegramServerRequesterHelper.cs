@@ -5,6 +5,7 @@ using UnityEngine.Networking;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
 using M2MqttUnity;
+using SimpleJSON;
 
 public static class TelegramServerRequesterHelper
 {

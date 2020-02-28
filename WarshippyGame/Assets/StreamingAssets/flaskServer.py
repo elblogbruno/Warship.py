@@ -69,5 +69,5 @@ def handle_request():
 def startServer():
     app.run(port=5001,debug = True)
 
-if __name__ == "__main__":
-    startServer()
+# if __name__ == "__main__":
+#     startServer()

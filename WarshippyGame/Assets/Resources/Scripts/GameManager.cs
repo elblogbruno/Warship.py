@@ -34,7 +34,7 @@ public class GameManager : MonoBehaviour
             Destroy(gameObject);
         if(mqttClient != null)
         mqttClient.onNewMessageMQTT += onNewMessage;
-       
+        mqttClient.onNewMessageMQTTImage += onNewImage;
     }
     private void Start()
     {
@@ -59,23 +59,24 @@ public class GameManager : MonoBehaviour
     public void onNewMessage(string message)
     {
         Debug.Log("[GameManager] New Message: " + message);
+        botPosition = message;
+        ShouldChangeTurnToBot(true, botPosition);
+    }
+    public void onNewImage(string message)
+    {
+        Debug.Log("[GameManager] New Message: " + message);
         if (message.Contains("jpg"))
         {
             Debug.Log("[GameManager] Saving bot photo uri: " + message);
             PlayerPrefs.SetString("photo-uri-bot", message);
             PlayersPanelControl.instance.spawnUsers();
 
-        }else if (message.Contains("[NAME]"))
+        }
+        else
         {
             Debug.Log("[GameManager] Saving bot username: " + message);
             PlayerPrefs.SetString("username-bot", message);
         }
-        else
-        {
-            botPosition = message;
-            ShouldChangeTurnToBot(true, botPosition);
-        }
-        
     }
     private void Update()
     {

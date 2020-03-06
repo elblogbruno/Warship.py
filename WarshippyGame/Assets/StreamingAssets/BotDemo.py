@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import string
 import json
 import logging
 import telegram
@@ -11,12 +12,12 @@ from chuck import ChuckNorris
 import subprocess
 import os
 from gtts import gTTS
-import zmq
+#import zmq
 import base64
 jokes = ChuckNorris()
-import threading
+#import threading
 import GameHelper
-import ssl
+#import ssl
 import sys
 import paho.mqtt.client
 class chat_bot_user:
@@ -26,16 +27,19 @@ class chat_bot_user:
 
 client = paho.mqtt.client.Client()
 
-
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 positions = [["0:0","0:1","0:2","0:3","0:4"],
             ["1:0","1:1","1:2","1:3","1:4"],
             ["2:0","2:1","2:2","2:3","2:4"],
             ["3:0","3:1","3:2","3:3","3:4"],
             ["4:0","4:1","4:2","4:3","4:4"]]
 
+
 update_id = None
 chat_id = 415919768
-botToken = "729316731:AAEAoHTXtMSSbRAh38rBZW6y-O-H5vESoEk"
+botToken = "729316731:AAHXSFIvFXLtXuTFe34vPDkLzGxHgGEhPm8"
+bot = telegram.Bot(botToken)
 ReceivedMessage = ""
 shouldGetImage = True
 isMqttConnected = True
@@ -43,22 +47,18 @@ def publishOnMqtt(text):
     client.publish("BOT", text)
 def publishOnMqttImage(text):
     client.publish("IMAGE", text)
-def startBot():
-    # w = threading.Thread(target=startEcho)
-    # w.start()
-    # startEcho()
-    while getNewUserNameAndProfile() == False:
-        print("[Bot] We don't have any user photo")
-        return False
-    return True
 def error(update, context):
     """Log Errors caused by Updates."""
-    print('Update "%s" caused error "%s"', update, context.error)
+    print('Update "{update}" caused error "{context}"'.format(update=update,context=context.error))
 def gethelp(update, context):
     update.message.reply_text("Use /getid to get chat id.")
 def getid(update, context):
     update.message.reply_text(update.message.chat_id)
 def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        global isMqttConnected
+        print("[MQTT] Connected ok: " + isMqttConnected)
+        isMqttConnected = True
     print('connected (%s)' % client._client_id)
     client.subscribe(topic='BOT', qos=2)
 def on_message(client, userdata, message):
@@ -67,13 +67,22 @@ def on_message(client, userdata, message):
     print('payload: %s' % message.payload)
     print('qos: %d' % message.qos)
 
+def on_disconnect(client, userdata, rc):
+    if rc != 0:
+        global isMqttConnected
+        print("[MQTT] Unexpected MQTT disconnection. Will auto-reconnect")
+        print("[MQTT] isMqttConnected: " + isMqttConnected)
+
+        isMqttConnected = False
+        client.connect(host='127.0.0.1',keepalive=60, port=1883)
+        send_text("There was an error. Please try again!")
 def main():
     """Start the bot."""
     print("[Bot] Starting the bot...")
     # Create the Updater and pass it your bot's token.
     # Make sure to set use_context=True to use the new context based callbacks
     # Post version 12 this will no longer be necessary
-    updater = Updater("729316731:AAEAoHTXtMSSbRAh38rBZW6y-O-H5vESoEk", use_context=True,workers =10)
+    updater = Updater("729316731:AAHXSFIvFXLtXuTFe34vPDkLzGxHgGEhPm8", use_context=True)
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
@@ -86,35 +95,25 @@ def main():
     dp.add_handler(MessageHandler(Filters.text, echo))
     dp.add_handler(MessageHandler(Filters.photo, getImage))
 
-    # log all errors
-    dp.add_error_handler(error)
 
     # Start the Bot
     updater.start_polling()
-
+   
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
     # start_polling() is non-blocking and will stop the bot gracefully.
     #startBot()
+    
     global client
-    client.connect(host='127.0.0.1', port=1883)
+    client.connect(host='127.0.0.1',keepalive=60, port=1883)
     client.on_disconnect = on_disconnect
-    client.on_connect=on_connect
+    client.on_connect = on_connect
+    
     print("[Bot] Bot started...")
     updater.idle()
 
+    
 
-# def readUserInput():
-#     global update_id
-#     data = " "
-#     while True:
-#         try:
-#             echo()
-#         except NetworkError:
-#             sleep(1)
-#         except Unauthorized:
-#             # The user has removed or blocked the bot.
-#             update_id += 1
 
 ##BOT UTILS
 def setBotToken(token):
@@ -125,7 +124,7 @@ def setBotToken(token):
 def send_image_url(imageUrl):
     global botToken
     print("[Bot] Sending photo: " + imageUrl)
-    bot = telegram.Bot(botToken)
+    
     #chat_id = bot.get_updates(timeout = 10)[-1].message.chat_id
 
     bot.send_photo(chat_id = chat_id,photo=imageUrl)
@@ -133,7 +132,7 @@ def send_image_url(imageUrl):
 def send_audio(imageUrl):
     global botToken
     print("[Bot] Sending audio: " + imageUrl)
-    bot = telegram.Bot(botToken)
+    
     #chat_id = bot.get_updates(timeout = 10)[-1].message.chat_id
     tts = gTTS(imageUrl,'en')
     tts.save('hello.mp3')
@@ -144,7 +143,7 @@ def send_image(imageFile):
             #subprocess.call(command.split(' '))
             global botToken
             print("[Bot] Sending photo: " + imageFile)
-            bot = telegram.Bot(botToken)
+            
             #chat_id = bot.get_updates(timeout = 10)[-1].message.chat_id
             try:
                 bot.send_photo(chat_id = chat_id,photo=open(imageFile,'rb'))
@@ -156,7 +155,7 @@ def send_image(imageFile):
 def send_attack_query():
     global botToken
     print("[Bot] Sending attack query")
-    bot = telegram.Bot(botToken)
+    
     custom_keyboard = [["0:0","0:1","0:2","0:3","0:4"],
             ["1:0","1:1","1:2","1:3","1:4"],
             ["2:0","2:1","2:2","2:3","2:4"],
@@ -168,7 +167,7 @@ def send_text(msg):
     global update_id
     global botToken
     print("[Bot] Sending message: " + msg)
-    bot = telegram.Bot(botToken)
+    
     bot.sendMessage(chat_id,msg,timeout = 10)
     return
 
@@ -176,7 +175,7 @@ def send_text(msg):
 def get_user_text():
     global botToken
     global ReceivedMessage
-    bot = telegram.Bot(botToken)
+    
     #chat_id = bot.get_updates(timeout = 10)[-1].message.chat_id
     try:
         with open('message.txt') as json_file:
@@ -202,7 +201,7 @@ def getNewUserNameAndProfile():
     # global update_id
     # logging.warning(update_id)
     # global botToken
-    # bot = telegram.Bot(botToken)
+    # 
     # new_chat_user = chat_bot_user()
     # askForStart()
     # while new_chat_user.user_name == " " and new_chat_user.user_id == " " and new_chat_user.user_photo_id == " ":
@@ -235,6 +234,7 @@ def getImage(update, context):
     photo = update.message.photo
     user = update.message.from_user
     global shouldGetImage
+    global isMqttConnected
     if shouldGetImage and isMqttConnected:
         if user:
             new_chat_user.user_name = user.username
@@ -248,7 +248,9 @@ def getImage(update, context):
         else:
             print("[Bot] There is no user photo yet.")
     else:
-        send_text("There was an error with MQTT retrying....")
+        send_text("There was an error with MQTT and Image retrying....")
+        client.connect(host='127.0.0.1',keepalive=60, port=1883)
+        isMqttConnected = True
         askForStart()
 def echo(update, context):
     print("[Bot] Echoing what user is typing.")
@@ -261,8 +263,7 @@ def echo(update, context):
 def OnNewUserFound(chat_user):
     print('[Bot] Bot is talking with user {} and his user ID is: {} and user photo ID is: {}'.format(chat_user.user_name, chat_user.user_id,chat_user.user_photo_id))
     try:
-        global botToken
-        bot = telegram.Bot(botToken)
+        
         global shouldGetImage
         shouldGetImage = False
         if(os.path.exists('{}.jpg'.format(chat_user.user_photo_id))):
@@ -289,6 +290,7 @@ def OnNewUserFound(chat_user):
         #     print("[Bot] Other unknown error.")
         # pass
 
+
 def setCurrentMessage(text):
     isCorrect = GameHelper.update_position(text)
     GameHelper.setCurrentMessage(text)
@@ -297,22 +299,6 @@ def setCurrentMessage(text):
         print("[BotDemo] Correct position.")
     else:
         print("[BotDemo] Not a correct position. Passing")
-    # data = {'message': text, 'has_attacked': 'true'}
-    # with open('message.txt', 'w') as outfile:
-    #     json.dump(data, outfile)
-def on_connect(client, userdata, flags, rc):
-    if rc == 0:
-        global isMqttConnected
-        print("[MQTT] Connected ok: " + isMqttConnected)
-        isMqttConnected = True
-def on_disconnect(client, userdata, rc):
-    if rc != 0:
-        global isMqttConnected
-        print("[MQTT] Unexpected MQTT disconnection. Will auto-reconnect")
-        print("[MQTT] isMqttConnected: " + isMqttConnected)
-
-        isMqttConnected = False
-        client.connect(host='127.0.0.1', port=1883)
-        send_text("There was an error. Please try again!")
+    
 # if __name__ == "__main__":
 #     main()

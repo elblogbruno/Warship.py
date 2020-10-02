@@ -100,7 +100,7 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
     {
         StartCoroutine(TakeSnapshot());
     }
-    public void TakeScreenshot()
+    /*public void TakeScreenshot()
     {
         var width = 452;
         var height = 415;
@@ -121,7 +121,7 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
 
         //System.IO.File.WriteAllBytes(Application.dataPath + "SavedScreen.png", bytes);
 
-    }
+    }*/
     WaitForSeconds waitTime = new WaitForSeconds(0.1F);
     WaitForEndOfFrame frameEnd = new WaitForEndOfFrame();
     public IEnumerator TakeSnapshot()

@@ -2,28 +2,29 @@ import logging
 import threading
 import os
 from time import sleep
-import telegram
-from telegram.error import NetworkError, Unauthorized
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import asyncio
+from threading import Thread
+
 import atexit
 import re
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from flask import Flask, request, redirect, url_for
+
 from werkzeug.utils import secure_filename
-import GameHelper
+from TelegramBot import *
+
 import threading
-import BotDemo as bot
+
+
 import json
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
-oldCoordenates = " "
-chat_id = 415919768
 
-# lock to control access to variable
-dataLock = threading.Lock()
-# thread handler
-yourThread = threading.Thread()
-TOKEN = "729316731:AAEAoHTXtMSSbRAh38rBZW6y-O-H5vESoEk"
 app = Flask(__name__)
+
+def main():
+    print("Starting Flask Server")
+    app.run(port=5001,debug = True) 
+
 @app.route('/sendimage', methods = ['GET', 'POST'])
 def upload_file():
     file = request.files['image']
@@ -61,13 +62,10 @@ def getmessage():
         q = json.load(json_file)
     print("Getting message: "+ str(q))
     return q
-@app.route('/', methods=['GET', 'POST'])
+
+@app.route('/')
 def handle_request():
     return "Flask Server & Android are Working Successfully"
 
-
-def startServer():
-    app.run(port=5001,debug = True)
-
-# if __name__ == "__main__":
-#     startServer()
+if __name__ == "__main__":
+    main()

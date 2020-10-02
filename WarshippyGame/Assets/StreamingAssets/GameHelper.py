@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import BotDemo as bot
+
 import string
 import os
 coordenates = " "
@@ -34,9 +34,23 @@ def thereIsNoNumber(s):
 def isAValidPosition(s):
     sp = s.split(":")
     for pos in sp:
-        if sp >= 5 or sp < 0:
+        if pos >= 5 or pos < 0:
                 return False
     return True
+
+def isCorrectCoordenate(pos):
+    print("CHECKING IF {} IS CORRECT".format(pos))
+    if pos != None:
+        if ":" in pos:
+                if thereIsNoNumber(pos) == False:
+                        if wrongPosition(pos) == False:
+                                return True
+                else:
+                        return False   
+        else:
+                return False
+    else:
+            return False
 def getCoordenates():
         global coordenates
         return coordenates
@@ -46,18 +60,29 @@ def update_position(pos):
                 if thereIsNoNumber(pos) == False:
                         if wrongPosition(pos) == False:
                                 msg = "Attacking user at this coordenates : " + pos
-                                bot.send_text(msg)
+                                #bot.send_text(msg)
                                 global coordenates
                                 coordenates = pos
                                 return True
                 else:
                         msg = "This position is not available, Please write a coordenate like this: 2:2 [x,y]"
-                        bot.send_text(msg)
+                        #bot.send_text(msg)
                         return False
                         
         else:
                 msg = "This position is not available, Please write a coordenate like this: 2:2 [x,y]"
-                bot.send_text(msg)
+                #bot.send_text(msg)
                 return False
     else:
             return False
+def someBoxOccupied(b,boat):
+        o = boat.orientation
+        x = int(boat.x)
+        y = int(boat.y)
+        if int(x)+ 2 > 5 or int(y) + 2 > 5:
+                return False
+        elif len(b) < 0:
+                return False
+        else:
+                for boats in b:
+                        return boats.x == x and boats.y == y and boats.orientation == o

@@ -33,8 +33,11 @@ public class GameManager : MonoBehaviour
             //Destroy this, this enforces our singleton pattern so there can only be one instance of SoundManager.
             Destroy(gameObject);
         if(mqttClient != null)
-        mqttClient.onNewMessageMQTT += onNewMessage;
-        mqttClient.onNewMessageMQTTImage += onNewImage;
+        {
+            mqttClient.onNewMessageMQTT += onNewMessage;
+            mqttClient.onNewMessageMQTTImage += onNewImage;
+        }
+
     }
     private void Start()
     {

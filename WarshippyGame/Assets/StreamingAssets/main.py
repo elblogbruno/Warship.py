@@ -1,17 +1,26 @@
-import os
-import BotDemo
-import flaskServer
-import argparse
+import subprocess
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-b', '--bot', help='Starts Bot.')
-parser.add_argument('-s', '--server', help='Starts Server.')
-args = parser.parse_args()
+from FlaskServer import * 
+from TelegramBot import *
 
-if args.bot:
-    print("Starting bot.")
-    BotDemo.main()
-    
-if args.server:
-    print("Starting server.")
-    flaskServer.startServer()
+from threading import Thread
+
+from secrets import TELEGRAM_TOKEN
+
+def flask_server(): 
+   #server = BOT_SERVER(True)
+   subprocess.call('python FlaskServer.py', creationflags=subprocess.CREATE_NEW_CONSOLE)
+
+def telegram_bot():
+   #bot = TELEGRAM_BOT(TELEGRAM_TOKEN,True)
+   subprocess.call('python TelegramBot.py', creationflags=subprocess.CREATE_NEW_CONSOLE)
+
+if __name__ == "__main__":
+   #Thread(target = flask_server,daemon=True).start() 
+   #telegram_bot()
+   Thread(target = telegram_bot,daemon=True).start()
+   Thread(target = flask_server,daemon=True).start() 
+
+   
+   
+   

@@ -30,6 +30,7 @@ from enum import Enum
 from utils import *
 import GameHelper
 import os 
+import base64
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
@@ -64,6 +65,13 @@ class TELEGRAM_BOT(object):
         else:
             context.bot.send_message(chat_id=update.message.chat_id,text=msg)
         return
+    def send_image(self,msg,context = None,update = None):
+        print("[Bot] Sending image: " + msg)
+        if context == None or update  == None:
+            self.context.bot.send_photo(chat_id=self.chat_id, photo=open(msg, 'rb'))
+        else:
+            context.bot.send_photo(chat_id=update.message.chat_id, photo=open(msg, 'rb'))
+        return
     def send_audio(self,imageUrl):
         global botToken
         print("[Bot] Sending audio: " + imageUrl)
@@ -78,15 +86,15 @@ class TELEGRAM_BOT(object):
         self.token = token
         self.host = '127.0.0.1'
         self.topic = 'BOT'
+        self.imageTopic = 'IMAGE'
         self.game_state = GameState.AskingForPicture
-        self.mqtt_handler = MQTT_Handler(self.host,self.topic,self)
+        self.mqtt_handler = MQTT_Handler(self.host,self.topic,self.imageTopic,self)
         self.isMqttConnected = self.mqtt_handler.isConnected()
         self.shouldGetImage = True
         self.asking_boats = False
         self.boats_available = [ ]
         
         self.main()
-    
         if debug:
             print("[BOT] Bot has started: " + str(self.isMqttConnected))
 
@@ -111,6 +119,7 @@ class TELEGRAM_BOT(object):
             reply_markup=markup)
 
         return ASKING_PICTURE
+        
     def ask_picture(self,update, context):
         print("[BOT] Asking for picture")
         self.send_text("Please send me your profile picture!",context,update)
@@ -152,10 +161,11 @@ class TELEGRAM_BOT(object):
             else:
                 print("[Bot] Photo hasn't been downloaded yet. Should start downloading now.")
                 newFile = self.context.bot.get_file(chat_user.user_photo_id)
-                newFile.download(custom_path='./'  + chat_user.user_photo_id +'.jpg')
-                print("[Bot] Downloading user picture..." + chat_user.user_photo_id)
+                filename = chat_user.user_photo_id +'.jpg'
+                newFile.download(custom_path='./'  + filename)
+                print("[Bot] Downloading user picture..." + filename)
                 self.send_text("Photo received succesfully!")
-                self.mqtt_handler.publish_on_mqtt(chat_user.user_photo_id+'.jpg',True)
+                self.mqtt_handler.publish_on_mqtt(filename,True)
                 self.mqtt_handler.publish_on_mqtt(chat_user.user_name,True)
                 self.chat_user = chat_user
 
@@ -173,9 +183,15 @@ class TELEGRAM_BOT(object):
             update.message.reply_text('Please send me your first boat position:',reply_markup = reply_markup_coordenates)
             return ASKING_BOATS
         else:
-            return ConversationHandler.END
-    
-
+            reply_markup_coordenates = ReplyKeyboardMarkup(yes_table)
+            update.message.reply_text('Really like to end it all?',reply_markup = reply_markup_coordenates)
+            return ASKING_BOATS
+            
+    def update_table_to_bot(self,img_data):
+        with open("game_table.png", "wb") as fh:
+            fh.write(base64.decodebytes(img_data))
+        self.send_image('game_table.png')
+        
     def set_boat_orientation(self,update,context):
         print("Setting boat orientation: " + update.message.text)
         self.aux_boat.orientation =  update.message.text
@@ -187,8 +203,10 @@ class TELEGRAM_BOT(object):
             return ASKING_BOATS
         elif len(self.boats_available) == 2:
             self.boats_available.append(self.aux_boat)
-            update.message.edit_text(reply_markup=None)
-            self.send_text("You can only place 3 boats, what means?. You guess exactly,WAR!!")
+            #self.send_text()
+            reply_markup_coordenates = ReplyKeyboardMarkup(coordenates_table)
+            update.message.reply_text("You can only place 3 boats, what means?. You guess exactly,WAR!!",reply_markup = reply_markup_coordenates)
+            self.mqtt_handler.publish_on_mqtt("bot-player-ready",True) 
             return ATTACKING
         else:
             self.boats_available.append(self.aux_boat)
@@ -247,9 +265,9 @@ class TELEGRAM_BOT(object):
        
 
     def attack_boat(self,update, context):
-        for boat in self.boats_available:
-            print(boat.x +" "+ boat.y + boat.orientation)
-            self.send_text(boat.x +" "+ boat.y + boat.orientation)
+        self.show_boats()
+        self.send_image("game_table.png")
+       
         # user_data = context.user_data
         # text = update.message.text
         # category = user_data['choice']
@@ -260,7 +278,7 @@ class TELEGRAM_BOT(object):
         #                         "{} You can tell me more, or change your opinion"
         #                         " on something.".format(facts_to_str(user_data)))
 
-        return ATTACKING
+        return ConversationHandler.END
 
     def done(self,update, context):
         # user_data = context.user_data
@@ -296,7 +314,7 @@ class TELEGRAM_BOT(object):
                 ASKING_WAR: [MessageHandler(Filters.regex('^(War|Nooo I am afraid.)$'), self.ask_for_war)],
                 ASKING_BOATS: [MessageHandler(Filters.regex('^({})$'.format(get_coordenates_as_string())),self.add_boat_to_table)],
                 ASKING_ORIENTATION: [MessageHandler(Filters.regex('^(Vertical|Horizontal)$'),self.set_boat_orientation)],
-                ATTACKING: [MessageHandler(Filters.text,
+                ATTACKING: [MessageHandler(Filters.regex('^({})$'.format(get_coordenates_as_string())),
                                             self.attack_boat),
                             ],
                                             
@@ -304,7 +322,7 @@ class TELEGRAM_BOT(object):
             
             
             
-            fallbacks=[MessageHandler(Filters.regex('^Done$'), self.done)]
+            fallbacks=[MessageHandler(Filters.regex('^Goodbye My Lover, Goodbye my friend$'), self.done),MessageHandler(Filters.regex('^War'), self.ask_for_war)]
         )
 
         dp.add_handler(conv_handler)

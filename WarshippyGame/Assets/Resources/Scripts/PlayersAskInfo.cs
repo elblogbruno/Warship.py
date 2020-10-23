@@ -99,7 +99,7 @@ public class PlayersAskInfo : MonoBehaviour
             }
         Debug.Log("Total count value: " + count);
         if (count == myKeys.Count)
-            {
+        {
                 InfoPanelManager.instance.SpawnInfoMessage("Playing game");
                 GoToGame();
         }

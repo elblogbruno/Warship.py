@@ -8,15 +8,17 @@ using System.IO;
 
 public class PlayersPanelControl : MonoBehaviour
 {
+    [Header("Unity Event")]
     public UnityEvent onPlayersSpawned;
     [Header("List of CurrentPlayers")]
     public List<Player> players;
-
-    public RawImage PlayerImage;
-    public TMP_Text PlayerName;
-    public RawImage PlayerImage1;
-    public TMP_Text PlayerName1;
+    [Header("Users panel UI")]
+    public Image Player1ImageHolder;
+    public TMP_Text Player1NameTextHolder;
+    public Image Player2ImageHolder;
+    public TMP_Text Player2NameTextHolder;
     public GameObject PanelObject;
+    
     public static PlayersPanelControl instance = null;
     public void Awake()
     {
@@ -37,18 +39,21 @@ public class PlayersPanelControl : MonoBehaviour
         PanelObject.SetActive(true);
         string name = PlayerPrefs.GetString("PlayerName");
         string url = PlayerPrefs.GetString("PhotoURI");
+        
         string name1 = PlayerPrefs.GetString("username-bot");
         string url1 = Path.Combine(Application.streamingAssetsPath,PlayerPrefs.GetString("photo-uri-bot"));
+        
         players = new List<Player>();
         players.Add(createUser(name, url, Player.PlayerType.PCUser));
         players.Add(createUser(name1, url1, Player.PlayerType.Bot));
+        
         if (onPlayersSpawned != null)
         {
             Debug.Log("Users Spawned");
             onPlayersSpawned.Invoke();
         }
     }
-    IEnumerator GetImage(string url,bool who)
+    /*IEnumerator GetImage(string url,bool who)
     {
         Debug.Log("getting This photo url: " + url);
         WWW www = new WWW(url);
@@ -63,7 +68,7 @@ public class PlayersPanelControl : MonoBehaviour
             PlayerImage1.texture = www.texture;
         }
        
-    }
+    }*/
     public void setUserNumberOfBoats(Player user,int num)
     {
         user.numOfBoats = num;
@@ -78,13 +83,15 @@ public class PlayersPanelControl : MonoBehaviour
 
         if(type == Player.PlayerType.Bot)
         {
-            PlayerName1.text = name;
-            StartCoroutine(GetImage(photo_uri,true));
+            Player2NameTextHolder.text = name;
+            Davinci.get().load(photo_uri).into(Player2ImageHolder).start();
+            //StartCoroutine(GetImage(photo_uri,true));
         }
         else
         {
-            PlayerName1.text = name;
-            StartCoroutine(GetImage(photo_uri,false));
+            Player1NameTextHolder.text = name;
+            Davinci.get().load(photo_uri).into(Player1ImageHolder).start();
+            //StartCoroutine(GetImage(photo_uri,false));
         }
         
         return player;

@@ -33,7 +33,20 @@ namespace M2MqttUnity.Examples
             client.Publish(BOT_TOPIC, System.Text.Encoding.UTF8.GetBytes("Test message"), MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE, false);
             Debug.Log("Test message published");
         }
-
+        
+        /// <summary>
+        /// Publishes a message on the topic
+        /// </summary>
+        /// <param name="msg"></param>
+        public void PublishMSG(string msg,bool isImage)
+        {
+            string topic = BOT_TOPIC;
+            if (isImage)
+            {
+                topic = BOT_TOPIC_IMAGE;
+            }
+            client.Publish(topic, System.Text.Encoding.UTF8.GetBytes(msg), MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE, false);
+        }
         public void SetBrokerAddress(string brokerAddress)
         {
             if (!updateUI)
@@ -119,8 +132,8 @@ namespace M2MqttUnity.Examples
             StoreMessage(msg);
             if (topic == BOT_TOPIC_IMAGE)
             {
-                if(onNewMessageMQTTImage != null)
-                onNewMessageMQTTImage(msg);
+                if(onNewMessageMQTTImage != null) 
+                    onNewMessageMQTTImage(msg);
             }
             else if(topic == BOT_TOPIC)
             {

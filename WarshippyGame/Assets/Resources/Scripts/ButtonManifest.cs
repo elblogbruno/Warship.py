@@ -18,11 +18,13 @@ public enum ButtonState
 public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
 {
     #region Const
-
     int WIDTH = 452;
-        int HEIGHT = 415;
+    int HEIGHT = 415;
     #endregion
+
+    #region Variables
     
+    //public MqttClient client;
     public string ButtonAttackCoordenates;
     public Image ButtonGridImage;
     public Text positionText;
@@ -35,13 +37,14 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
     public Sprite ShipDownSprite;
     public Sprite WaterDown;
     public Sprite IdleSprite;
-    public Player _currentPlayer;
-
-    /*[HideInInspector]
-    public HelloClient PythonClient;*/
-
-    public ButtonState _currentButtonState;
     
+    public Player _currentPlayer;
+    public ButtonState _currentButtonState;
+
+    #endregion
+
+    #region Utils
+
     public string getCoordenates()
     {
         return ButtonAttackCoordenates;
@@ -88,98 +91,51 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
     {
         this.GetComponent<Button>().interactable = state;
     }
-    public void OnPointerEnter(PointerEventData eventData)
-    {
-        SoundManager.instance.PlaySingle(SoundManager.SoundType.BUTTON_SOUND);
-    }
+    
     public void setText(string text){
         ButtonAttackCoordenates = text;
         positionText.text = text;
     }
-    public void TakeScreenshotOfPlay(int width,int height)
+    
+    public void onClick()
     {
-        StartCoroutine(TakeSnapshot());
-    }
-    /*public void TakeScreenshot()
-    {
-        var width = 452;
-        var height = 415;
-        var startX = 168;
-        var startY = 10;
-        var tex = new Texture2D(width, height, TextureFormat.RGB24, false);
 
-        Rect rex = new Rect(startX, startY, width, height);
-
-        tex.ReadPixels(rex, 0, 0);
-        tex.Apply();
-
-        // Encode texture into PNG
-        var bytes = tex.EncodeToJPG();
-        string bytesstr = Convert.ToBase64String(bytes);
-        //PythonClient.SendText(bytesstr);
-        Destroy(tex);
-
-        //System.IO.File.WriteAllBytes(Application.dataPath + "SavedScreen.png", bytes);
-
-    }*/
-    WaitForSeconds waitTime = new WaitForSeconds(0.1F);
-    WaitForEndOfFrame frameEnd = new WaitForEndOfFrame();
-    public IEnumerator TakeSnapshot()
-    {
-        yield return waitTime;
-        yield return frameEnd;
-        /*var width = 452;
-        var height = 415;
-        var startX = 168;
-        var startY = 10;*/
-
-        var width = 700;
-        var height = 600;
-        var startX = 0;
-        var startY = 0;
-
-
-        var tex = new Texture2D(width, height, TextureFormat.RGB24, false);
-
-        Rect rex = new Rect(startX, startY, width, height);
-
-        tex.ReadPixels(rex, 0, 0);
-        tex.Apply();
-
-        // Encode texture into PNG
-        var bytes = tex.EncodeToJPG();
-        TelegramServerRequesterHelper.SendImageToBot(tex.EncodeToJPG(), "name"+System.DateTime.UtcNow,this);
-        TelegramServerRequesterHelper.SendMessageToBot("Your Turn...",this);
-        TelegramServerRequesterHelper.SendAudioToBot("Your Turn...", this);
-        GameManager.instance.ShouldChangeTurnToBot(false, ButtonAttackCoordenates);
-        //TelegramServerRequesterHelper.GetMessageFromBot(this);
-        Destroy(tex);
-
-    }
-
-    IEnumerator SendRequest(UnityWebRequest www)
-    {
-        yield return www.SendWebRequest();
-        if (www.isNetworkError)
+        if (GameManager.instance.GetGameState() == GameState.UserAttacking)
         {
-            Debug.Log(www.error);
+            Debug.Log("Attacking bot at this coordenates: " + ButtonAttackCoordenates);
+
+            ButtonGridSpawner.instance.TakeScreenshotOfPlay(WIDTH,HEIGHT,ButtonAttackCoordenates);
+        
+            GameManager.instance.ShouldChangeTurnToBot(false, ButtonAttackCoordenates);
+        
+            InfoPanelManager.instance.SpawnInfoMessage("Attacking Bot Player 2 at this coordenates: "+ ButtonAttackCoordenates);
+        }
+        else if(GameManager.instance.GetGameState() == GameState.UserPlacingBoats)
+        {
+            Debug.Log("Placing boat at this coordenates: " + ButtonAttackCoordenates);
+
+            HandlePlacingBoats.instance.placeBoat(getCoordenates());
         }
         else
         {
-            var w = www;
-            Debug.Log("Success!\n" + www.downloadHandler.text);
+            InfoPanelManager.instance.SpawnInfoMessage("Please don't go to fast you sucker.");
         }
-    }
+   }
+    #endregion
 
-    // SERVER //////////////////////////
+    #region Sound
 
-
-
-    public void onClick()
+    public void OnPointerEnter(PointerEventData eventData)
     {
-        Debug.Log("Attacking bot at this coordenates: " + ButtonAttackCoordenates);
-        //PythonClient.SendText(ButtonAttackCoordenates);
-        TakeScreenshotOfPlay(WIDTH,HEIGHT);
-        InfoPanelManager.instance.SpawnInfoMessage("Attacking Bot Player at this coordenates: "+ ButtonAttackCoordenates);
+        SoundManager.instance.PlaySingle(SoundManager.SoundType.BUTTON_SOUND);
     }
+
+
+    #endregion
+
+    
+
+
+
+    
 }

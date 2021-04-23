@@ -30,9 +30,4 @@ public class GetRandomChuckNorrisJoke : MonoBehaviour
             jokeText.text = joke;
         }
     }
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }

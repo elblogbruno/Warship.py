@@ -1,10 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using TMPro;
-using UnityEngine.UI;
 using UnityEngine.Events;
-using System.IO;
+
 
 public class PlayersPanelControl : MonoBehaviour
 {
@@ -12,13 +9,9 @@ public class PlayersPanelControl : MonoBehaviour
     public UnityEvent onPlayersSpawned;
     [Header("List of CurrentPlayers")]
     public List<Player> players;
-    [Header("Users panel UI")]
-    public Image Player1ImageHolder;
-    public TMP_Text Player1NameTextHolder;
-    public Image Player2ImageHolder;
-    public TMP_Text Player2NameTextHolder;
-    public GameObject PanelObject;
-    
+
+    public PlayersInfoPanel playersInfoPanel;
+
     public static PlayersPanelControl instance = null;
     public void Awake()
     {
@@ -30,18 +23,16 @@ public class PlayersPanelControl : MonoBehaviour
         else if (instance != this)
             //Destroy this, this enforces our singleton pattern so there can only be one instance of SoundManager.
             Destroy(gameObject);
-
-        PanelObject.SetActive(false);
     }
 
-    public void spawnUsers()
+    public void SpawnUsers()
     {
-        PanelObject.SetActive(true);
+        //PanelObject.SetActive(true);
         string name = PlayerPrefs.GetString("PlayerName");
         string url = PlayerPrefs.GetString("PhotoURI");
         
         string name1 = PlayerPrefs.GetString("username-bot");
-        string url1 = Path.Combine(Application.streamingAssetsPath,PlayerPrefs.GetString("photo-uri-bot"));
+        string url1 = PlayerPrefs.GetString("photo-uri-bot");
         
         players = new List<Player>();
         players.Add(createUser(name, url, Player.PlayerType.PCUser));
@@ -53,26 +44,11 @@ public class PlayersPanelControl : MonoBehaviour
             onPlayersSpawned.Invoke();
         }
     }
-    /*IEnumerator GetImage(string url,bool who)
-    {
-        Debug.Log("getting This photo url: " + url);
-        WWW www = new WWW(url);
-        while (!www.isDone)
-            yield return null;
-        if (who)
-        {
-            PlayerImage.texture = www.texture;
-        }
-        else
-        {
-            PlayerImage1.texture = www.texture;
-        }
-       
-    }*/
     public void setUserNumberOfBoats(Player user,int num)
     {
         user.numOfBoats = num;
     }
+    
     public Player getPlayer(int num)
     {
         return players[num];
@@ -83,15 +59,13 @@ public class PlayersPanelControl : MonoBehaviour
 
         if(type == Player.PlayerType.Bot)
         {
-            Player2NameTextHolder.text = name;
-            Davinci.get().load(photo_uri).into(Player2ImageHolder).start();
-            //StartCoroutine(GetImage(photo_uri,true));
+            playersInfoPanel.Player2NameTextHolder.text = name;
+            Davinci.get().load(photo_uri).into(playersInfoPanel.Player2ImageHolder).start();
         }
         else
         {
-            Player1NameTextHolder.text = name;
-            Davinci.get().load(photo_uri).into(Player1ImageHolder).start();
-            //StartCoroutine(GetImage(photo_uri,false));
+            playersInfoPanel.Player1NameTextHolder.text = name;
+            Davinci.get().load(photo_uri).into(playersInfoPanel.Player1ImageHolder).start();
         }
         
         return player;

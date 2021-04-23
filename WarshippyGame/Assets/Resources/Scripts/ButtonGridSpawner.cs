@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using DragAnDrop;
 using M2MqttUnity.Examples;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,10 +13,11 @@ public class ButtonGridSpawner : MonoBehaviour
 {
     #region Variable
     public MqttClient client;
-    public ButtonManifest[] ListOfButtons;
+    private ButtonManifest[] ListOfButtons;
     public int NumOfButtonsToSpawn;
-    public Sprite WaterImage;
+    public BoatsSlot BoatsSlot;
     public ButtonManifest ButtonTemplate;
+
     public string[] coordenates;
     public static ButtonGridSpawner instance = null;
     int x = 0; int y = 0;
@@ -33,12 +35,12 @@ public class ButtonGridSpawner : MonoBehaviour
             //Destroy this, this enforces our singleton pattern so there can only be one instance of SoundManager.
             Destroy(gameObject);
     }
-
-
+    
+    /// <summary>
+    /// Starts the grid
+    /// </summary>
     public void StartGrid()
     {
-        
-        //HelloClient.OnNewMessageReceived = OnNewMessageReceived;
         coordenates = new string[25];
         coordenates[0] = (0 + ":" + 0);
         for (int i = 1; i < coordenates.Length; i++)
@@ -52,6 +54,7 @@ public class ButtonGridSpawner : MonoBehaviour
             coordenates[i] = (x+ ":" + y);
         }
         SetupButtons();
+        BoatsSlot.InitBoatSlot();
     }
     /// <summary>
     /// Setups the grid buttons.
@@ -59,45 +62,21 @@ public class ButtonGridSpawner : MonoBehaviour
     void SetupButtons()
     {
         ListOfButtons = new ButtonManifest[NumOfButtonsToSpawn];
-        ButtonTemplate.transform.parent = this.transform;
-        ListOfButtons[0] = ButtonTemplate;
-       
-        ListOfButtons[0].ButtonGridImage.sprite = WaterImage;
-        ListOfButtons[0].ButtonAttackCoordenates = coordenates[0];
-        ListOfButtons[0].setText(coordenates[0]);
-        
-        for (int i = 1; i < ListOfButtons.Length; i++)
+
+        for (int i = 0; i < ListOfButtons.Length; i++)
         {
-            ButtonManifest ButtonInstance = Instantiate(ButtonTemplate, this.gameObject.transform);
+            ButtonManifest ButtonInstance = Instantiate(ButtonTemplate, this.transform);
             ListOfButtons[i] = ButtonInstance;
             
-            /*bool randomBoolean = (Random.value > 0.5f);
-            Player randomButtonOwner = PlayersPanelControl.instance.getPlayer(Random.Range(0, 1));
-            ListOfButtons[i].setHiddenShip(randomBoolean);
-            if (randomBoolean)
-            {
-                ListOfButtons[i].setButtonOwner(randomButtonOwner);
-                ListOfButtons[i].setText(randomButtonOwner.ToString());
-            }
-            else
-            {
-                ListOfButtons[i].setText(coordenates[i]);
-            }*/
             Player buttonOwner = PlayersPanelControl.instance.getPlayer(0);
             ListOfButtons[i].setText(coordenates[i]);
             ListOfButtons[i].setButtonOwner(buttonOwner);
-            ListOfButtons[i].ButtonGridImage.sprite = WaterImage;
+            ListOfButtons[i].UpdateState(ButtonState.Idle);
+            
             ListOfButtons[i].ButtonAttackCoordenates = coordenates[i];
         }
     }
     #endregion
-    
-    void OnNewMessageReceived(string message)
-    {
-        InfoPanelManager.instance.SpawnInfoMessage(message);
-    }
-    
-    
 
     #region Utils
 
@@ -106,7 +85,7 @@ public class ButtonGridSpawner : MonoBehaviour
     /// </summary>
     /// <param name="pos"></param>
     /// <returns></returns>
-    public ButtonManifest getButtonByPosition(string pos)
+    public ButtonManifest GetButtonByPosition(string pos)
     {
         int index = 0;
         for (int i = 0; i < ListOfButtons.Length; i++)
@@ -116,43 +95,19 @@ public class ButtonGridSpawner : MonoBehaviour
             {
                 index = i;
                 Debug.Log("[ButtonGridSpawner] Button was found with this position: " + pos);
+                break;
             }
         }
         return ListOfButtons[index];
     }
     
-    /// <summary>
-    /// Attacks the player2 (Bot) in the position you pass.
-    /// </summary>
-    /// <param name="pos"></param>
-    /// <param name="client"></param>
-    public void attackAtPosition(string pos,MqttClient client)
-    {
-        ButtonManifest CurrentButton =  getButtonByPosition(pos);
-        Debug.Log("[ButtonGridSpawner] Attacking at this position: " + pos);
-        Player CurrentPlayer = CurrentButton.getButtonOwner();
-        if (CurrentButton.hasGotHiddenShip())
-        {
-            InfoPanelManager.instance.SpawnInfoMessage("A ship by " + CurrentPlayer.name + " was turned down!");
-            //TelegramServerRequesterHelper.SendMessageToBot("A ship by " + CurrentPlayer.name + " was turned down!", this);
-            MQTTUnity2Bot.SendMessageToBot("A ship by " + CurrentPlayer.name + " was turned down!",client);
-            ButtonState state = ButtonState.ShipDown;
-            PlayersPanelControl.instance.setUserNumberOfBoats(CurrentPlayer, 3);
-            CurrentButton.UpdateState(state);
-        }
-        else
-        {
-            InfoPanelManager.instance.SpawnInfoMessage("You hit watter. What a dumb one!");
-            //TelegramServerRequesterHelper.SendMessageToBot("You hit watter. What a dumb one!",this);
-            MQTTUnity2Bot.SendMessageToBot("You hit watter. What a dumb one!",client);
+    
 
-            ButtonState state = ButtonState.WaterDown;
-            CurrentButton.UpdateState(state);
-        }
-        CurrentButton.setButtonState(false);
-        
-    }
-    public void TakeScreenshotOfPlay(int width,int height,string ButtonAttackCoordenates)
+    
+
+    #region ScreenShot
+
+    public void TakeScreenshotOfPlayAndSentToBot()
     {
         StartCoroutine(TakeSnapshot());
     }
@@ -181,22 +136,15 @@ public class ButtonGridSpawner : MonoBehaviour
         tex.ReadPixels(rex, 0, 0);
         tex.Apply();
 
-        // Encode texture into PNG
-        //var bytes = tex.EncodeToJPG();
-        //TelegramServerRequesterHelper.SendImageToBot(tex.EncodeToJPG(), "name"+System.DateTime.UtcNow,this);
-        
-        //MQTTUnity2Bot.SendImageToBot(tex.EncodeToJPG().ToString(),client);
         string enc = System.Convert.ToBase64String(tex.EncodeToPNG());
-        Debug.Log(enc);
+        //Debug.Log(enc);
         MQTTUnity2Bot.SendImageToBot(enc,client);
-
-        //TelegramServerRequesterHelper.SendMessageToBot("Your Turn...",this);
-        MQTTUnity2Bot.SendMessageToBot("Your Turn...",client);
-        //TelegramServerRequesterHelper.SendAudioToBot("Your Turn...", this);
-        
-        //TelegramServerRequesterHelper.GetMessageFromBot(this);
         Destroy(tex);
+        //GameManager.instance.ShouldChangeTurnToBot(false);
     }
+
+    #endregion
+    
     #endregion
     
 }

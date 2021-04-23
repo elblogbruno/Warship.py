@@ -85,6 +85,7 @@ GameObject:
   - component: {fileID: 5097071103310683489}
   - component: {fileID: 5097071103310683490}
   - component: {fileID: 5097071103310683495}
+  - component: {fileID: 1619914496184616565}
   m_Layer: 5
   m_Name: ButtonTemplate
   m_TagString: Untagged
@@ -215,9 +216,25 @@ MonoBehaviour:
   ButtonAttackCoordenates: 
   ButtonGridImage: {fileID: 5097071103203721737}
   positionText: {fileID: 7268844439925668969}
-  BGon: {fileID: 21300000, guid: 852a12c9a9ee5f748b2f5be303878846, type: 3}
-  BGoff: {fileID: 21300000, guid: ed59223c55a09ab468d7d95564618f85, type: 3}
-  PythonClient: {fileID: 0}
+  hasHiddenShip: 0
+  WaterSprite: {fileID: 0}
+  ShipSprite: {fileID: 0}
+  ShipDownSprite: {fileID: 0}
+  WaterDown: {fileID: 0}
+  IdleSprite: {fileID: 0}
+  _currentButtonState: 0
+--- !u!114 &1619914496184616565
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5097071103310683516}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c88e0f10aa5bfd4484e30d16141a497, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &7852154882039252318
 GameObject:
   m_ObjectHideFlags: 0

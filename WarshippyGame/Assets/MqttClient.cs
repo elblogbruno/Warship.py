@@ -135,7 +135,7 @@ namespace M2MqttUnity.Examples
                 if(onNewMessageMQTTImage != null) 
                     onNewMessageMQTTImage(msg);
             }
-            else if(topic == BOT_TOPIC)
+            else if(topic == BOT_TOPIC && msg != "unblock" && msg != "block")
             {
                 if (onNewMessageMQTT != null)
                     onNewMessageMQTT(msg);

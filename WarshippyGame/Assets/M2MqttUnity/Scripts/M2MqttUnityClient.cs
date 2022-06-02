@@ -25,6 +25,7 @@ SOFTWARE.
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using M2MqttUnity.Examples;
 using UnityEngine;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
@@ -62,7 +63,7 @@ namespace M2MqttUnity
         /// <summary>
         /// Wrapped MQTT client
         /// </summary>
-        protected MqttClient client;
+        protected MqttClient1 client;
 
         private List<MqttMsgPublishEventArgs> messageQueue1 = new List<MqttMsgPublishEventArgs>();
         private List<MqttMsgPublishEventArgs> messageQueue2 = new List<MqttMsgPublishEventArgs>();
@@ -85,10 +86,10 @@ namespace M2MqttUnity
         /// </summary>
         public virtual void Connect()
         {
-            if (client == null || !client.IsConnected)
+            /*if (client == null || !client.IsConnected)
             {
                 StartCoroutine(DoConnect());
-            }
+            }*/
         }
 
         /// <summary>
@@ -278,7 +279,7 @@ namespace M2MqttUnity
 #if (!UNITY_EDITOR && UNITY_WSA_10_0 && !ENABLE_IL2CPP)
                     client = new MqttClient(brokerAddress,brokerPort,isEncrypted, isEncrypted ? MqttSslProtocols.SSLv3 : MqttSslProtocols.None);
 #else
-                    client = new MqttClient(brokerAddress, brokerPort, isEncrypted, null, null, isEncrypted ? MqttSslProtocols.SSLv3 : MqttSslProtocols.None);
+                    //client = new MqttClient1(brokerAddress, brokerPort, isEncrypted, null, null, isEncrypted ? MqttSslProtocols.SSLv3 : MqttSslProtocols.None);
                     //System.Security.Cryptography.X509Certificates.X509Certificate cert = new System.Security.Cryptography.X509Certificates.X509Certificate();
                     //client = new MqttClient(brokerAddress, brokerPort, isEncrypted, cert, null, MqttSslProtocols.TLSv1_0, MyRemoteCertificateValidationCallback);
 #endif
@@ -291,17 +292,17 @@ namespace M2MqttUnity
                     yield break;
                 }
             }
-            else if (client.IsConnected)
+            /*else if (client.IsConnected)
             {
                 yield break;
-            }
+            }*/
             OnConnecting();
 
             // leave some time to Unity to refresh the UI
             yield return new WaitForEndOfFrame();
             yield return new WaitForEndOfFrame();
 
-            client.Settings.TimeoutOnConnection = timeoutOnConnection;
+            /*client.Settings.TimeoutOnConnection = timeoutOnConnection;
             string clientId = Guid.NewGuid().ToString();
             try
             {
@@ -325,7 +326,7 @@ namespace M2MqttUnity
             else
             {
                 OnConnectionFailed("CONNECTION FAILED!");
-            }
+            }*/
         }
 
         private IEnumerator DoDisconnect()
@@ -340,14 +341,14 @@ namespace M2MqttUnity
             mqttClientConnected = false;
             if (client != null)
             {
-                if (client.IsConnected)
+                /*if (client.IsConnected)
                 {
                     UnsubscribeTopics();
                     client.Disconnect();
                 }
                 client.MqttMsgPublishReceived -= OnMqttMessageReceived;
                 client.ConnectionClosed -= OnMqttConnectionClosed;
-                client = null;
+                client = null;*/
             }
         }
 

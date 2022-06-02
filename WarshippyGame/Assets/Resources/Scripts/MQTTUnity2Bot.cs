@@ -7,10 +7,12 @@ public static class MQTTUnity2Bot
 {
     public static void SendMessageToBot(string message, MqttClient client)
     {
-        client.PublishMSG(message,false);
+        Debug.Log("MQTT DEPRECATED");
+        //client.PublishMsg(message,false);
     }
     public static void SendImageToBot(string path, MqttClient client)
     {
-        client.PublishMSG(path,true);
+        Debug.Log("MQTT DEPRECATED");
+        //client.PublishMsg(path,true);
     }
 }

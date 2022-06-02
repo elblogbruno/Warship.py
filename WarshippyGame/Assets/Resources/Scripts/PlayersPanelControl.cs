@@ -1,18 +1,24 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Events;
 
 
 public class PlayersPanelControl : MonoBehaviour
 {
+    private const int MAX_BOATS_PIECES_PER_USER = 9;
+    private const int MAX_BOATS_PER_USER = 3;
+
     [Header("Unity Event")]
     public UnityEvent onPlayersSpawned;
     [Header("List of CurrentPlayers")]
     public List<Player> players;
-
-    public PlayersInfoPanel playersInfoPanel;
+    
+    public PlayerInfoPanel playerInfoPanel1;
+    public PlayerInfoPanel playerInfoPanel2;
 
     public static PlayersPanelControl instance = null;
+
     public void Awake()
     {
         //Check if there is already an instance of SoundManager
@@ -27,7 +33,6 @@ public class PlayersPanelControl : MonoBehaviour
 
     public void SpawnUsers()
     {
-        //PanelObject.SetActive(true);
         string name = PlayerPrefs.GetString("PlayerName");
         string url = PlayerPrefs.GetString("PhotoURI");
         
@@ -35,8 +40,8 @@ public class PlayersPanelControl : MonoBehaviour
         string url1 = PlayerPrefs.GetString("photo-uri-bot");
         
         players = new List<Player>();
-        players.Add(createUser(name, url, Player.PlayerType.PCUser));
-        players.Add(createUser(name1, url1, Player.PlayerType.Bot));
+        players.Add(CreateUser(playerInfoPanel1, name, url, Player.PlayerType.PCUser));
+        players.Add(CreateUser(playerInfoPanel2, name1, url1, Player.PlayerType.Bot));
         
         if (onPlayersSpawned != null)
         {
@@ -44,30 +49,87 @@ public class PlayersPanelControl : MonoBehaviour
             onPlayersSpawned.Invoke();
         }
     }
-    public void setUserNumberOfBoats(Player user,int num)
-    {
-        user.numOfBoats = num;
-    }
-    
-    public Player getPlayer(int num)
-    {
-        return players[num];
-    }
-    Player createUser(string name,string photo_uri,Player.PlayerType type)
-    {   
-        Player player = new Player(type,0,name,photo_uri);
 
-        if(type == Player.PlayerType.Bot)
+    public void ChangePlayerVisualState(Player.PlayerType player, Player.PlayerVisualState state)
+    {
+        Player playerToChange = GetPlayer(player);
+
+        playerToChange.ChangeVisualState(state);
+
+        switch (state){
+            case Player.PlayerVisualState.BoatsPlaced:
+                playerToChange.playerInfoPanel.PanelTextHolder.color = Color.green;
+                break;
+            case Player.PlayerVisualState.Winner:
+                playerToChange.playerInfoPanel.PanelTextHolder.color = Color.red;
+                break;
+            case Player.PlayerVisualState.Attacking:
+                playerToChange.playerInfoPanel.PanelTextHolder.color = Color.blue;
+                break;
+            default:
+                playerToChange.playerInfoPanel.PanelTextHolder.color = playerToChange.original_color;
+                break;
+        }
+    }
+
+
+    public bool SetUserNumberOfBoats(Player.PlayerType user_type, int num)
+    {
+        if (user_type == Player.PlayerType.Bot)
         {
-            playersInfoPanel.Player2NameTextHolder.text = name;
-            Davinci.get().load(photo_uri).into(playersInfoPanel.Player2ImageHolder).start();
+            var player = players[1];
+            bool changed = num != player.numOfBoats;
+
+            Debug.Log("SetUserNumberOfBoats: " + user_type+ " "+ num.ToString() +  " " + player.numOfBoats);
+
+            if (changed)
+            {
+                player.numOfBoats = num;
+            }
+            players[1] = player;
+
+            return changed;
         }
         else
         {
-            playersInfoPanel.Player1NameTextHolder.text = name;
-            Davinci.get().load(photo_uri).into(playersInfoPanel.Player1ImageHolder).start();
+            var player = players[0];
+            bool changed = num != player.numOfBoats;
+            if (changed)
+            {
+                player.numOfBoats = num;
+            }
+            players[0] = player;
+
+            return changed;
         }
+    }
+    
+    public Player GetPlayer(Player.PlayerType user_type)
+    {
+        foreach (var player in players)
+        {
+            if (player.playerType == user_type)
+            {
+                return player;
+            }
+        }
+
+        return players[0];
+    }
+    
+    public Player GetPlayer(int num)
+    {
+        return players[num];
+    }
+    
+    Player CreateUser(PlayerInfoPanel playerInfoPanel, string name, string photo_uri,Player.PlayerType type)
+    {   
+        Player player = new Player(playerInfoPanel, type, MAX_BOATS_PER_USER, name,photo_uri);
+
+        playerInfoPanel.PlayerNameTextHolder.text = name;
+        Davinci.get().load(photo_uri).into(playerInfoPanel.PlayerImageHolder).start();
         
         return player;
     }
+
 }

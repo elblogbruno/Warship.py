@@ -31,8 +31,6 @@ public class CameraShake : MonoBehaviour
             //Destroy this, this enforces our singleton pattern so there can only be one instance of SoundManager.
             Destroy(gameObject);
         Debug.Log("CameraShake");
-        //Set SoundManager to DontDestroyOnLoad so that it won't be destroyed when reloading our scene.
-        //DontDestroyOnLoad(gameObject);
     }
 
 

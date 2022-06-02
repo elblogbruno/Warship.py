@@ -8,12 +8,10 @@ public class Message
 {
     public string message;
     public bool pass2bot;
-    public MqttClient client;
-    public Message(string m, bool pas,MqttClient client)
+    public Message(string m, bool pas)
     {
         message = m;
         pass2bot = pas;
-        this.client = client;
     }
 }
 public class InfoPanelManager : MonoBehaviour
@@ -56,18 +54,23 @@ public class InfoPanelManager : MonoBehaviour
             yield return null;
         }
     }
+    
     // Start is called before the first frame update
-    public void SpawnInfoMessage(string message)
+    public void SpawnInfoMessage(string message, bool passToBot = false)
     {
-        _messageQueue.Add(new Message(message,false,null));
-    }
-    public void SpawnInfoMessage(string message,bool passToBot,MqttClient client)
-    {
-        _messageQueue.Add(new Message(message,true,client));
+        _messageQueue.Add(new Message(message,passToBot));
     }
     IEnumerator HandleMessage(Message message)
     {
         InfoText.text = message.message;
+        
+        if (message.pass2bot)
+        {
+            MessagePacket message_from_panel = new MessagePacket(message.message, "text");
+
+            TelegramServerRequesterHelper.SendMessageToBot(message_from_panel.ToJson(),this);
+        }
+        
         InfoPanel.SetActive(true);
         PanelAnimator.Play("SlideIn");
 
@@ -83,15 +86,6 @@ public class InfoPanelManager : MonoBehaviour
         
         for (int i = 0; i < 50; i++) yield return new WaitForFixedUpdate();
 
-        if (message.pass2bot)
-        {
-            MQTTUnity2Bot.SendMessageToBot(message.message,message.client);
-        }
-    }
-
-    // Update is called once per frame
-    void Start()
-    {
-        //SpawnInfoMessage("Welcome to Warship.py!");
+        
     }
 }

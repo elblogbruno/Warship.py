@@ -58,7 +58,7 @@ namespace M2MqttUnity.Examples
 
         public void TestPublish()
         {
-            client.Publish("BOT", System.Text.Encoding.UTF8.GetBytes("Test message"), MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE, false);
+            //client.Publish("BOT", System.Text.Encoding.UTF8.GetBytes("Test message"), MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE, false);
             Debug.Log("Test message published");
             AddUiMessage("Test message published.");
         }
@@ -122,12 +122,12 @@ namespace M2MqttUnity.Examples
 
         protected override void SubscribeTopics()
         {
-            client.Subscribe(new string[] { "BOT" }, new byte[] { MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE });
+            //client.Subscribe(new string[] { "BOT" }, new byte[] { MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE });
         }
 
         protected override void UnsubscribeTopics()
         {
-            client.Unsubscribe(new string[] { "BOT" });
+            //client.Unsubscribe(new string[] { "BOT" });
         }
 
         protected override void OnConnectionFailed(string errorMessage)
@@ -160,15 +160,15 @@ namespace M2MqttUnity.Examples
             {
                 if (testPublishButton != null)
                 {
-                    testPublishButton.interactable = client.IsConnected;
+                    //testPublishButton.interactable = client.IsConnected;
                 }
                 if (disconnectButton != null)
                 {
-                    disconnectButton.interactable = client.IsConnected;
+                    //disconnectButton.interactable = client.IsConnected;
                 }
                 if (connectButton != null)
                 {
-                    connectButton.interactable = !client.IsConnected;
+                    //connectButton.interactable = !client.IsConnected;
                 }
             }
             if (addressInputField != null && connectButton != null)
@@ -199,22 +199,7 @@ namespace M2MqttUnity.Examples
             updateUI = true;
             base.Start();
         }
-
-        protected override void DecodeMessage(string topic, byte[] message)
-        {
-            string msg = System.Text.Encoding.UTF8.GetString(message);
-            Debug.Log("Received: " + msg);
-            StoreMessage(msg);
-            if (topic == "M2MQTT_Unity/test")
-            {
-                if (autoTest)
-                {
-                    autoTest = false;
-                    Disconnect();
-                }
-            }
-        }
-
+        
         private void StoreMessage(string eventMsg)
         {
             eventMessages.Add(eventMsg);

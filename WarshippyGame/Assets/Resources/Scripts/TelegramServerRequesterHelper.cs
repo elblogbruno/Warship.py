@@ -1,14 +1,21 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Networking;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
 using M2MqttUnity;
 using SimpleJSON;
+using UnityEngine.Events;
+
 
 public static class TelegramServerRequesterHelper
 {
+    public static UnityAction<MessagePacket> OnBotStatus;
+    //public UnityAction<BotStatus> onNewMessageMQTTImage;
+    
     public static string API_URL
     {
         get
@@ -28,9 +35,9 @@ public static class TelegramServerRequesterHelper
         instance.StartCoroutine(SendMessage(message,true));
     }
     // Start is called before the first frame update
-    public static void GetMessageFromBot(MonoBehaviour instance)
+    public static void GetBotStatus(MonoBehaviour instance)
     {
-        instance.StartCoroutine(GetMessage());
+        instance.StartCoroutine(GetBotStatus());
     }
     // Start is called before the first frame update
     public static void StartBotPhotoBehaviour(MonoBehaviour instance)
@@ -55,9 +62,9 @@ public static class TelegramServerRequesterHelper
         {
         }
     }
-    static IEnumerator GetMessage()
+    static IEnumerator GetBotStatus()
     {
-        UnityWebRequest www = UnityWebRequest.Get(API_URL + "getmessage");
+        UnityWebRequest www = UnityWebRequest.Get(API_URL + "get_bot_status");
         Debug.Log(www.url);
         yield return www.SendWebRequest();
         if (www.isNetworkError)
@@ -68,39 +75,42 @@ public static class TelegramServerRequesterHelper
         {
             // Show results as text
             Debug.Log("Message from user: " + www.downloadHandler.text);
-            GameManager.instance.SetGameState(GameState.BotAttacking);
-            GameManager.instance.SetBotAttackPosition(www.downloadHandler.text);
-            byte[] results = www.downloadHandler.data;
+            
+            MessagePacket bot = JsonUtility.FromJson<MessagePacket>(www.downloadHandler.text);
+            
+            OnBotStatus?.Invoke(bot);
         }
     }
 
     static IEnumerator SendMessage(string message,bool isAudio)
     {
-        string query = "sendmessage";
+        string query = "send_message";
         if (isAudio)
         {
-            query = "sendaudio";
+            query = "send_audio";
         }
-            UnityWebRequest www = UnityWebRequest.Get(API_URL + query+ "?text="+message);
-            yield return www.SendWebRequest();
-            if (www.isNetworkError)
-            {
-                Debug.Log(www.error);
-            }
-            else
-            {
-                // Show results as text
-                //Debug.Log(www.downloadHandler.text);
+        string url = API_URL + query+ "?text="+message;
+        Debug.Log(url);
+        UnityWebRequest www = UnityWebRequest.Get(url);
+        yield return www.SendWebRequest();
+        if (www.isNetworkError)
+        {
+            Debug.Log(www.error);
+        }
+        else
+        {
+            // Show results as text
+            //Debug.Log(www.downloadHandler.text);
 
-                // Or retrieve results as binary data
-                byte[] results = www.downloadHandler.data;
-            }
+            // Or retrieve results as binary data
+            byte[] results = www.downloadHandler.data;
+        }
     }
     static void SendImageRequest(byte[] bytes, string filename, MonoBehaviour instance)
     {
         WWWForm form = new WWWForm();
         form.AddBinaryData("image", bytes, filename, "filename");
-        UnityWebRequest www = UnityWebRequest.Post(API_URL + "sendimage?", form);
+        UnityWebRequest www = UnityWebRequest.Post(API_URL + "send_image?", form);
         instance.StartCoroutine(SendImageRequest(www));
     }
     static IEnumerator SendImageRequest(UnityWebRequest www)

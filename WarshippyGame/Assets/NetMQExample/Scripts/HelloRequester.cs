@@ -1,76 +1,77 @@
-﻿using AsyncIO;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using AsyncIO;
 using NetMQ;
 using NetMQ.Sockets;
-using System;
-using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityWebSocket;
 
 /// <summary>
 ///     Example of requester who only sends Hello. Very nice guy.
 ///     You can copy this class and modify Run() to suits your needs.
 ///     To use this class, you just instantiate, call Start() when you want to start and Stop() when you want to stop.
 /// </summary>
-public class HelloRequester : RunAbleThread
+public class HelloRequester
 {
-   
-    /// <summary>
-    ///     Request Hello message to server and receive message back. Do it 10 times.
-    ///     Stop requesting when Running=false.
-    /// </summary>
-    /// 
-    protected override void Run()
+    private readonly Thread receiveThread;
+    private bool running;
+    private ConcurrentQueue<string> queue = new ConcurrentQueue<string>();
+    private string message;
+    public HelloRequester()
     {
-        ForceDotNet.Force(); // this line is needed to prevent unity freeze after one use, not sure why yet
-        using (RequestSocket client = new RequestSocket())
+        /*string address = "tcp://localhost:5555";
+        WebSocket socket = new WebSocket(address);
+        receiveThread = new Thread((object callback) => 
         {
-            
-            client.Connect("tcp://localhost:5555");
+            socket.OnMessage += OnMessage;
+            //var socket = new RequestSocket();
+            try{
+                socket.ConnectAsync();
 
-            if(Running){
-                Debug.Log("Sending the message to send.");
-                client.SendFrame(messageToSend);
-                
+                Debug.Log("Connected to socket 'server'");
+                socket.SendAsync("ACK");
+                    while (running)
+                    {
+                        if (!queue.IsEmpty)
+                        {
+                            string request;
+                            queue.TryDequeue(out request);
+                            Debug.Log("Sending " + request + " to python server");
+                            // send the request to server
+                            // wait for the response
+                            // use the response to do whatever you want the button to do
+                        }
+                        
+                        socket.SendAsync("ACK");
+                        
+                        ((Action<String>)callback)(message);
+                    }
+            }finally{
+                if (socket != null)
+                {
+                    socket.CloseAsync();
+                }
             }
-            
-            
         }
-
-        NetMQConfig.Cleanup(); // this line is needed to prevent unity freeze after one use, not sure why yet
+        );*/
+        
+    }
+    public void Start(Action<String> callback)
+    {
+        running = true;
+        receiveThread.Start(callback);
     }
 
-    /// <summary>
-    ///     Request Hello message to server and receive message back. Do it 10 times.
-    ///     Stop requesting when Running=false.
-    /// </summary>
-    /// 
-    protected override void Receive()
+    public void Stop()
     {
-        ForceDotNet.Force(); // this line is needed to prevent unity freeze after one use, not sure why yet
-        using (RequestSocket client = new RequestSocket())
-        {
+        running = false;
+        receiveThread.Join();
+    }
 
-            client.Connect("tcp://localhost:5555");
-
-            if (Running)
-            {
-                string message = null;
-                bool gotMessage = false;
-                while (Running)
-                {
-                    gotMessage = client.TryReceiveFrameString(out message); // this returns true if it's successful
-                    if (gotMessage) break;
-                }
-
-                if (gotMessage)
-                {
-                    Debug.Log("Received " + message);
-                    receivedMessage = message;
-                    OnNewText(message);
-                }
-
-            }
-        }
-
-        NetMQConfig.Cleanup(); // this line is needed to prevent unity freeze after one use, not sure why yet
+    public void add_string_to_queue(string message)
+    {
+        queue.Enqueue(message);
     }
 }

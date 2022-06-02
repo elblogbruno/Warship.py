@@ -1,0 +1,4 @@
+IMAGE_FOLDER = "temp_image_folder"
+MAXIMUM_BOATS = 3
+MAXIMUM_BOAT_LENGHT = 3
+BOAT_SIZE = 3

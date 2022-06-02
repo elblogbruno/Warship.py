@@ -1,12 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
-using System.IO;
-using System;
-using UnityEngine.Networking;
-using M2MqttUnity.Examples;
+using TMPro;
 
 public enum ButtonState
 {
@@ -16,18 +11,26 @@ public enum ButtonState
     WaterDown = 3,
     Idle = 4
 }
-public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
+public class ButtonManifest : MonoBehaviour, IPointerEnterHandler, IDeselectHandler, ISelectHandler
 {
 
     #region Variables
-    
-    //public MqttClient client;
+    public int x;
+    public int y;
+
     public string ButtonAttackCoordenates;
+    public string ButtonOrientation;
+    private string BoatOwnerName;
+
     public Image ButtonGridImage;
-    public Text positionText;
+    public TMP_Text positionText;
+    public GameObject orientationPanel;
+    public TMP_Text orientationText;
+
     public bool hasHiddenShip;
-    //public Sprite BGon;
-    //public Sprite BGoff;
+    public bool hasSink;
+    
+    
     [Header("Type of boats.")]
     public Sprite WaterSprite;
     public Sprite ShipSprite;
@@ -35,13 +38,45 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
     public Sprite WaterDown;
     public Sprite IdleSprite;
     
-    public Player _currentPlayer;
-    public ButtonState _currentButtonState;
+    private Player _currentPlayer;
+    private ButtonState _currentButtonState;
     private Quaternion originalRotation;
+
+
+    #region Owner Logic Variables
+        public bool isOwner;
+        public int ownerX = -1;
+        public int ownerY = -1;
+    #endregion
+    
+    public Color selectColor;
+    private Color originalColor;
+    
+    private UserTable _userTable;
+    
+    private Boat _boat;
+    public Boat boat{
+        /* if null set to boat else return boat*/
+        get{
+            if (_boat == null)
+            {
+                _boat = GetComponentInParent<Boat>();
+            }
+            return _boat;
+        }
+    }
     #endregion
 
     #region Utils
 
+    private UserTable GetPanelParent()
+    {
+        return _userTable;
+    }
+
+    public void SetPanelParent(UserTable table){
+        _userTable = table;
+    }
     public string getCoordenates()
     {
         return ButtonAttackCoordenates;
@@ -50,8 +85,40 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
     private void Start()
     {
         originalRotation = ButtonGridImage.transform.localRotation;
+        originalColor = ButtonGridImage.color;
+        orientationPanel.SetActive(false);
     }
 
+    public void SetOwnerCoordenates(int x, int y)
+    {
+        ownerX = x;
+        ownerY = y;
+    }
+    
+    public string GetNameOfBoatOwner(string name)
+    {
+        return BoatOwnerName;
+    }
+    
+    public void SetNameOfBoatOwner(string name)
+    {
+        BoatOwnerName = name;
+    }
+
+    public void SetCustomSprite(Sprite sprite, bool vertical = false)
+    {
+        ButtonGridImage.sprite = sprite;
+        
+        if (!vertical)
+        {
+            ButtonGridImage.transform.localRotation = originalRotation;
+        }
+        else
+        {
+            ButtonGridImage.transform.localRotation = Quaternion.Euler(0, 0, 90); // -180
+        }
+    }
+    
     public void UpdateState(ButtonState state)
     {
         Sprite CurrentSprite = IdleSprite;
@@ -68,6 +135,7 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
                 break;
             case ButtonState.ShipDown:
                 CurrentSprite = ShipDownSprite;
+                hasSink = true;
                 break;
             case ButtonState.WaterDown:
                 CurrentSprite = WaterDown;
@@ -75,7 +143,7 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
             default:
                 break;
         }
-
+        
         _currentButtonState = state;
         ButtonGridImage.sprite = CurrentSprite;
     }
@@ -84,79 +152,106 @@ public class ButtonManifest : MonoBehaviour, IPointerEnterHandler
     {
         if (!horizontal)
         {
-            ButtonGridImage.transform.localRotation = new Quaternion(0,0,180,0);
+            Debug.Log("Rotating to vertical");
+            //ButtonGridImage.transform.localRotation = new Quaternion(0,0,0,90);
+            ButtonOrientation = "v";        
         }
         else
         {
-            ButtonGridImage.transform.localRotation = originalRotation;
+            Debug.Log("Rotating to horizontal");
+            //ButtonGridImage.transform.localRotation = originalRotation;
+            ButtonOrientation = "h";
         }
+        
+        orientationText.text = ButtonOrientation;
     }
     public ButtonState GetState()
     {
         return _currentButtonState;
     }
-    public bool hasGotHiddenShip()
+    public bool HasGotHiddenShip()
     {
         return hasHiddenShip;
     }
-    public void setHiddenShip(bool has)
+    
+    public void OnSelect(BaseEventData data) 
+    {
+        boat.buttonCrosshair.SetActive(true);
+        orientationPanel.SetActive(true);
+    }
+    public void OnDeselect (BaseEventData data) 
+    {
+        if (!isOwner)
+        {
+            boat.buttonCrosshair.gameObject.SetActive(false);
+            orientationPanel.SetActive(false);
+        }
+    }
+    
+    public void RestoreButtonState()
+    {
+        if (hasSink)
+            UpdateState(ButtonState.ShipDown);
+        else
+            UpdateState(ButtonState.Ship);
+    }
+    public void SetHiddenShip(bool has, bool setColor = false)
     {
         if (has)
         {
             hasHiddenShip = true;
-            UpdateState(ButtonState.Ship);
+            //UpdateState(ButtonState.Ship);
+            if (setColor)
+                ButtonGridImage.color = selectColor;
         }
         else
         {
             hasHiddenShip = false;
             UpdateState(ButtonState.Idle);
+            if (setColor)
+                ButtonGridImage.color = originalColor;
         }
     
     }
-    public Player getButtonOwner()
+    
+    public Player GetButtonOwner()
     {
         return _currentPlayer;
     }
-    public void setButtonOwner(Player playerType)
+    public void SetButtonOwner(Player playerType)
     {
         _currentPlayer = playerType;
     }
-    public void setButtonInteractable(bool state)
+    public void SetButtonInteractable(bool state)
     {
         this.GetComponent<Button>().interactable = state;
     }
-    
-    public void setText(string text)
+    public void SetText(string text)
     {
         this.name = text;
         ButtonAttackCoordenates = text;
         positionText.text = text;
     }
 
-
-
     public void OnClick()
     {
-        if (GameManager.instance.GetGameState() == GameState.UserAttacking)
+        if (GameManager.instance.GetGameState() == GameState.Player2Attacking)
         {
-            GameManager.instance.ShouldChangeTurnToBot(false, ButtonAttackCoordenates);
-        
-            InfoPanelManager.instance.SpawnInfoMessage("Attacking Bot Player 2 at this coordenates: "+ ButtonAttackCoordenates);
+            InfoPanelManager.instance.SpawnInfoMessage("Please don't go to fast you sucker. Wait for player 2 to shoot");
         }
-        else if(GameManager.instance.GetGameState() == GameState.UserPlacingBoats)
+        else if(GameManager.instance.GetGameState() == GameState.Player1PlacingBoats && hasHiddenShip) // we are only able to unplace boats that have a boat in it
         {
-            Debug.Log("Placing boat at this coordenates: " + ButtonAttackCoordenates);
-
-            HandlePlacingBoats.instance.PlaceBoat(ButtonAttackCoordenates);
+            Debug.Log("Unplacing boat at this coordenates: " + ButtonAttackCoordenates);
+            HandlePlacingBoats.instance.UnplaceBoat(ButtonAttackCoordenates);
         }
-        else if (GameManager.instance.GetGameState() == GameState.UserBoatsPlaced && !GameManager.instance.IsPlayer2Ready)
+        else if (GameManager.instance.GetGameState() == GameState.Player1BoatsPlaced && !GameManager.instance.IsPlayer2Ready)
         {
             Debug.Log("Waiting for player 2!");
             InfoPanelManager.instance.SpawnInfoMessage("We are waiting for the slow player 2. YOU SUCKER camm'ooon my mum is faster with no hands");
         }
         else 
         {
-            InfoPanelManager.instance.SpawnInfoMessage("Please don't go to fast you sucker.");
+            GameManager.instance.ShouldChangeTurnToBot(false, ButtonAttackCoordenates);
         }
     }
     #endregion

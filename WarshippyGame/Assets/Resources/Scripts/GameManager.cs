@@ -9,22 +9,28 @@ using Random = UnityEngine.Random;
 
 public enum GameState
 {
-    UserAttacking = 0,
-    BotAttacking = 1,
-    UserWon = 2,
-    BotWon = 3,
-    UserPlacingBoats  = 4,
-    UserBoatsPlaced = 5
+    Player1Attacking = 0,
+    Player2Attacking = 1,
+    Player1Won = 2,
+    Player2Won = 3,
+    Player1PlacingBoats  = 4,
+    Player1BoatsPlaced = 5
+}
+public enum GameType
+{
+    BotVsUnity = 0,
+    UnityVsUnity = 1
 }
 
-
+ 
 public class GameManager : MonoBehaviour
 {
-
     #region Const
 
-    const string ON_BOT_READY = "bot-player-ready";
-
+    private const string ON_BOT_READY = "bot-player-ready";
+    private const string ON_WAITING_FOR_US = "waiting_for_player_1";
+    
+    private const string ON_WAITING_FOR_BOT = "waiting_for_player_2";
     #endregion
   
     #region Variables
@@ -35,22 +41,38 @@ public class GameManager : MonoBehaviour
     public MqttClient mqttClient;
     [Header("Game related")]
     private GameState gameState;
+    private GameType gameType = GameType.BotVsUnity;
+    
     string botPosition ,oldPosition;
     public static GameManager instance = null;
-    [Space]
-    public ButtonGridSpawner gridSpawner;
-    [Space]
-    public UnityEvent OnStart;
     
+    // [Space]
+    // public PlayersTableControl gridSpawner;
+
+
+    #endregion
+    
+    #region booleans
     private bool isPlayer2Ready = false,isPlayer2NameAvailable = false;
     private bool hasStartedPlaying =false;
-    
-    
+
     public bool IsPlayer2Ready
     {
         get => isPlayer2Ready;
         set => isPlayer2Ready = value;
     }
+
+    #endregion
+
+    #region Unity Events
+    [Space]
+    public UnityEvent OnStart;
+    
+    [Space]
+    public UnityEvent OnPlayFinished;
+    
+    [Space]
+    public UnityEvent OnBotImageReceived;
 
     #endregion
 
@@ -67,16 +89,13 @@ public class GameManager : MonoBehaviour
             //Destroy this, this enforces our singleton pattern so there can only be one instance of SoundManager.
             Destroy(gameObject);
         
-        if(mqttClient != null)
-        {
-            mqttClient.onNewMessageMQTT += OnNewMessage;
-            mqttClient.onNewMessageMQTTImage += OnNewImage;
-        }
-
+        
+        
     }
     private void Start()
     {
         Debug.Log("Starting Game...");
+        TelegramServerRequesterHelper.OnBotStatus = OnNewStatus;
         HandlePlacingBoats.instance.OnBoatsPlaced = OnPlayer1BoatsPlaced;
         
         if (!debug)
@@ -101,15 +120,11 @@ public class GameManager : MonoBehaviour
     #endregion
 
     #region Utils
-
-    public void SetBotAttackPosition(string pos)
-    {
-        botPosition = pos;
-    }
     public GameState GetGameState()
     {
         return gameState;
     }
+    
     public void SetGameState(GameState state)
     {
         gameState = state;
@@ -117,7 +132,7 @@ public class GameManager : MonoBehaviour
 
     bool CheckCorrectPos(string pos)
     {
-        foreach (var coord in gridSpawner.coordenates)
+        foreach (var coord in PlayersTableControl.instance.panelPlayer1.Coordenates)
         {
             return pos.Equals(coord);
         }
@@ -126,9 +141,42 @@ public class GameManager : MonoBehaviour
     }
 
     #endregion
-
+    
     #region MQTT Handling
+    private MessagePacket lastStatus = null;
+    private void OnNewStatus(MessagePacket arg0)
+    {
+        if (arg0 != lastStatus)
+        {
+            lastStatus = arg0;
+            
+            if (arg0.type_message == "no_messages")
+            {
+                MessagePacket bot1 = new MessagePacket("ack", "tcp");
+                TelegramServerRequesterHelper.SendMessageToBot(bot1.ToJson(), this);
+                return;
+            }
 
+            Debug.Log("New Status: " + arg0.type_message);
+            
+            MessagePacket bot = new MessagePacket("ack", "tcp");
+            TelegramServerRequesterHelper.SendMessageToBot(bot.ToJson(), this);
+
+            if (arg0.type_message.Contains("image"))
+            {
+                Debug.Log("New Image Messages");
+                OnNewImage(arg0.message);
+            }
+            else if (arg0.type_message == "control")
+            {
+                OnControlMessage(arg0.message);
+            }
+            else
+            {
+                OnNewMessage(arg0);
+            }
+        }
+    }
     /// <summary>
     /// If true it blocks the bot, so it can't attack.
     /// </summary>
@@ -137,24 +185,66 @@ public class GameManager : MonoBehaviour
     {
         if (shouldblock)
         {
-            MQTTUnity2Bot.SendMessageToBot("block",mqttClient);
+            MessagePacket message = new MessagePacket("block","control");
+            TelegramServerRequesterHelper.SendMessageToBot(message.ToJson(),this);    
         }
         else
         {
-            MQTTUnity2Bot.SendMessageToBot("unblock",mqttClient);
+            MessagePacket message = new MessagePacket("unblock","control");
+            TelegramServerRequesterHelper.SendMessageToBot(message.ToJson(),this);   
         }
     }
-    
+
+    bool change = false; 
     /// <summary>
     /// Event from mqtt (player 2)
     /// </summary>
     /// <param name="message"></param>
-    private void OnNewMessage(string message)
+    private void OnNewMessage(MessagePacket message)
     {
-        if (gameState != GameState.UserPlacingBoats && gameState == GameState.BotAttacking)
+        if (GetGameState() == GameState.Player1Attacking || GetGameState() == GameState.Player2Attacking)
         {
-            botPosition = message; 
-            ShouldChangeTurnToBot(true, botPosition);
+            if (message.type_message == "attack_position")
+            {
+                botPosition = message.message; 
+                ShouldChangeTurnToBot(true, botPosition);
+            }
+            else if (message.type_message == "attack_result")
+            {
+                Debug.Log("We got an attack result from telegram: " + message.ToString());
+                
+                change = PlayersPanelControl.instance.SetUserNumberOfBoats(Player.PlayerType.Bot, message.points);
+                
+                if (change)
+                {
+                    InfoPanelManager.instance.SpawnInfoMessage($"We turned down ship from {PlayersPanelControl.instance.GetPlayer(Player.PlayerType.Bot).name} at this {message.message} coordenates");
+                    InfoPanelManager.instance.SpawnInfoMessage($"{PlayersPanelControl.instance.GetPlayer(Player.PlayerType.Bot).name} has {message.points} boats alive!");
+                }else{
+
+                    InfoPanelManager.instance.SpawnInfoMessage($"We hit a ship of {PlayersPanelControl.instance.GetPlayer(Player.PlayerType.Bot).name} (Player 2)!");
+                    
+                    
+
+                    InfoPanelManager.instance.SpawnInfoMessage($"{PlayersPanelControl.instance.GetPlayer(Player.PlayerType.Bot).name} has {message.points} boats alive!");
+                }
+                
+                // we update the player 2 panel with the new boat states
+                ButtonManifest currentButton = PlayersTableControl.instance.panelPlayer2.GetButtonByPosition(message.message);
+                currentButton.UpdateState(ButtonState.ShipDown);
+
+                AfterAttackingLogic();
+            }
+        }
+        else
+        {
+            Debug.Log("Play has finished");
+        }
+
+        if (message.type_message == "text")
+        {
+            InfoPanelManager.instance.SpawnInfoMessage(message.message);
+
+            ChatController.instance.ReceiveMessageFromBot(message.message);
         }
     }
     
@@ -164,27 +254,24 @@ public class GameManager : MonoBehaviour
     /// <param name="message"></param>
     private void OnNewImage(string message)
     {
-        if (gameState != GameState.BotAttacking || gameState != GameState.UserAttacking)
+        if (GetGameState() != GameState.Player2Attacking || GetGameState() != GameState.Player1Attacking)
         {
             Debug.Log("[GameManager] New Message on IMAGE topic: " + message);
+            
             if (message.Length > 100) //we have a photo from player2
             {
                 HandleImageReceived(message);
                 
-                PlayersPanelControl.instance.SpawnUsers();
+                SetGameState(GameState.Player1PlacingBoats);
                 
-                gameState = GameState.UserPlacingBoats;
+                OnBotImageReceived?.Invoke();
 
-                this.GetComponent<HandleUI>().SetPlacingBoatsUi();
+                if (!debug)
+                {
+                    MessagePacket message_to_bot = new MessagePacket(ON_WAITING_FOR_US,"control");
 
-                this.GetComponent<HandlePlacingBoats>().StartPlacingBoats(true);
-                
-                if(!debug)
-                    MQTTUnity2Bot.SendMessageToBot("waitingforplayer1",mqttClient);
-            }
-            else if (message.Contains(ON_BOT_READY))
-            {
-                isPlayer2Ready = true;
+                    TelegramServerRequesterHelper.SendMessageToBot(message_to_bot.ToJson(),this);
+                }
             }
             else
             {
@@ -198,7 +285,15 @@ public class GameManager : MonoBehaviour
         }
         
     }
-
+    public void OnControlMessage(string message)
+    {
+        if (message.Contains(ON_BOT_READY))
+        {
+            isPlayer2Ready = true;
+            InfoPanelManager.instance.SpawnInfoMessage("Player 2 is already prepared to fight, cammon you loser.");
+            PlayersPanelControl.instance.ChangePlayerVisualState(Player.PlayerType.Bot, Player.PlayerVisualState.BoatsPlaced);
+        }
+    }
     private void HandleImageReceived(string image_base64)
     {
         Debug.Log("[GameManager] Saving bot photo uri: " + image_base64);
@@ -207,7 +302,7 @@ public class GameManager : MonoBehaviour
                 
         var dirPath = Application.persistentDataPath;
                 
-        var filename = dirPath + "bot-profile-picture.jpg";
+        var filename = dirPath + "/bot-profile-picture.jpg";
                 
         if(!Directory.Exists(dirPath)) {
             Directory.CreateDirectory(dirPath);
@@ -219,6 +314,7 @@ public class GameManager : MonoBehaviour
                 
         PlayerPrefs.SetString("photo-uri-bot", filename);
     }
+    
     /// <summary>
     /// This function will be called from the HandlePlacingBoat event that tells player 1 has finished placing its boats 
     /// </summary>
@@ -226,80 +322,140 @@ public class GameManager : MonoBehaviour
     {
         if (!isPlayer2Ready)
         {
-            MQTTUnity2Bot.SendMessageToBot("waitingforplayer2",mqttClient);
+            MessagePacket myObject = new MessagePacket(ON_WAITING_FOR_BOT, "control");
+            TelegramServerRequesterHelper.SendMessageToBot(myObject.ToJson(),this);
         }
-        GameManager.instance.SetGameState(GameState.UserBoatsPlaced);
+        
+        PlayersPanelControl.instance.ChangePlayerVisualState(Player.PlayerType.PCUser, Player.PlayerVisualState.BoatsPlaced);
+        SetGameState(GameState.Player1BoatsPlaced);
     }
 
-    
+   
     #endregion
 
     #region Game Loop
     
     private void Update()
     {
-        switch (gameState)
+        switch (GetGameState())
         {
-            case GameState.BotAttacking:
-                Debug.Log("Bot Torn");
+            case GameState.Player2Attacking:
+                if (hasStartedPlaying)
+                {
+                    Debug.Log("Player 2 Torn");
+                    TopPanelManager.instance.SetInfoPanelText("Player 2 Torn");
+                    PlayersPanelControl.instance.ChangePlayerVisualState(Player.PlayerType.PCUser, Player.PlayerVisualState.Idle);
+                    PlayersPanelControl.instance.ChangePlayerVisualState(Player.PlayerType.Bot, Player.PlayerVisualState.Attacking);
+                }
                 break;
-            case GameState.UserAttacking:
-                Debug.Log("User Torn");
+            case GameState.Player1Attacking:
+                if (hasStartedPlaying)
+                {
+                    Debug.Log("Player 1 Torn");
+                    TopPanelManager.instance.SetInfoPanelText("Player 1 Torn");
+                    PlayersPanelControl.instance.ChangePlayerVisualState(Player.PlayerType.Bot, Player.PlayerVisualState.Idle);
+                    PlayersPanelControl.instance.ChangePlayerVisualState(Player.PlayerType.PCUser, Player.PlayerVisualState.Attacking);
+                }
                 break;
-            case GameState.UserBoatsPlaced when !isPlayer2Ready:
+            case GameState.Player1BoatsPlaced when !isPlayer2Ready:
+                TopPanelManager.instance.SetInfoPanelText("Waiting for player 2!");
                 Debug.Log("Waiting for player 2!");
-                MQTTUnity2Bot.SendMessageToBot("waitingforplayer2",mqttClient);
                 break;
-            case GameState.UserBoatsPlaced when isPlayer2Ready:
+            case GameState.Player1BoatsPlaced when isPlayer2Ready:
             {
                 if (!hasStartedPlaying)
                 {
+                    TopPanelManager.instance.SetInfoPanelText("Game starting!");
                     StartPlay();
                     hasStartedPlaying = true;
                 }
 
                 break;
             }
-            case GameState.UserWon:
+            case GameState.Player1Won:
+                TopPanelManager.instance.SetInfoPanelText("Player 1 won!");
                 break;
-            case GameState.BotWon:
+            case GameState.Player2Won:
+                TopPanelManager.instance.SetInfoPanelText("Player 2 won!");
                 break;
-            case GameState.UserPlacingBoats:
+            case GameState.Player1PlacingBoats:
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
     }
     
-    /// <summary>
-    /// Starts the play
-    /// </summary>
+    #endregion
+
+    #region GameControl
     void StartPlay()
     {
-        mqttClient.onNewMessageMQTTImage -= OnNewImage;
-        
         Debug.Log("Both users have placed the boats");
-        for (int i = 4; i > 0; i--)
+        
+        for (int i = 3; i > 0; i--)
         {
-            InfoPanelManager.instance.SpawnInfoMessage($"Game starting in {i}",true,mqttClient);
+            InfoPanelManager.instance.SpawnInfoMessage($"Game starting in {i}",true);
         }
 
-        int random = Random.Range(0, 1);
+        int random = Random.Range(0, 2);
         
         if (random == 1)
         {
-            gameState = GameState.BotAttacking;
             UnblocBlockPlayer2(false);
-            InfoPanelManager.instance.SpawnInfoMessage($"Player 2 starts attacking",true,mqttClient);
+            InfoPanelManager.instance.SpawnInfoMessage($"Player 2 starts attacking",true);
+            PlayersPanelControl.instance.ChangePlayerVisualState(Player.PlayerType.Bot, Player.PlayerVisualState.Attacking);
+
+            // if they are attacking us, we can't do anything, so panels are blocked.
+            PlayersTableControl.instance.panelPlayer1.SwitchTableToViewMode();
+            PlayersTableControl.instance.panelPlayer2.SwitchTableToViewMode();
         }
         else
-        {
-            gameState = GameState.UserAttacking;
+        {   
             UnblocBlockPlayer2(true);
-            InfoPanelManager.instance.SpawnInfoMessage($"Player 1 starts attacking",true,mqttClient);
+            InfoPanelManager.instance.SpawnInfoMessage($"Player 1 starts attacking",true);
+            PlayersPanelControl.instance.ChangePlayerVisualState(Player.PlayerType.PCUser, Player.PlayerVisualState.Attacking);
+            
+            // if we are attacking we enable attack panel
+            PlayersTableControl.instance.panelPlayer1.SwitchTableToViewMode();
+            PlayersTableControl.instance.panelPlayer2.SwitchTableToAttack();
         }
+        
+        InfoPanelManager.instance.SpawnInfoMessage($"Good luck players!",true);
+        
+        SetGameState((GameState)random);
+    }
 
-        InfoPanelManager.instance.SpawnInfoMessage($"Good luck players!",true,mqttClient);
+    void GetPosibleWinner()
+    {
+        Player player1 = PlayersPanelControl.instance.GetPlayer(0);
+        Player player2 = PlayersPanelControl.instance.GetPlayer(1);
+        
+        Debug.Log($"Current users boats player 1 = {player1.numOfBoats}, player 2 =  {player2.numOfBoats}");
+        
+        if (player1.numOfBoats == 0) //we have lost because we have 0 boats.
+        {
+            MessagePacket message = new MessagePacket("Yeah you rock it, YOU WON!", "text");
+
+            TelegramServerRequesterHelper.SendMessageToBot(message.ToJson(),this);
+                
+            InfoPanelManager.instance.SpawnInfoMessage("You have lost!");
+            
+            SetGameState(GameState.Player2Won);
+            
+            OnPlayFinished.Invoke();
+        }
+        else if (player2.numOfBoats == 0)
+        {
+            MessagePacket message = new MessagePacket("Yeah you rock it, YOU'VE LOST SUBNORMAL!", "text");
+
+            TelegramServerRequesterHelper.SendMessageToBot(message.ToJson(),this);
+                
+            InfoPanelManager.instance.SpawnInfoMessage("You have won!");
+            
+            SetGameState(GameState.Player1Won);
+            
+            OnPlayFinished.Invoke();
+        }
     }
 
     /// <summary>
@@ -307,81 +463,163 @@ public class GameManager : MonoBehaviour
     /// </summary>
     /// <param name="should"></param>
     /// <param name="position"></param>
-    public void ShouldChangeTurnToBot(bool should,string position = null)
+    public void ShouldChangeTurnToBot(bool should, string position = null)
     {
         if (should)
         {
-            gameState = GameState.BotAttacking;
             Debug.Log("[GameManager] Changing to player 2 (bot) turn: " + position);
-            AttackAtPosition(position,mqttClient);
+            SetGameState(GameState.Player2Attacking);
+
+            // if they are attacking us, we can't do anything, so panels are blocked.
+            PlayersTableControl.instance.panelPlayer1.disable();
+            PlayersTableControl.instance.panelPlayer2.disable();
+
+            AttackAtPosition(position);
         }
         else
         {
             if(position != null)
             {
                 Debug.Log("[GameManager] Changing to player 1 (Unity) turn: " + position);
-                gameState = GameState.UserAttacking;
-                AttackAtPosition(position,mqttClient);
+                SetGameState(GameState.Player1Attacking);
+                AttackAtPosition(position);
+
+                PlayersTableControl.instance.panelPlayer2.enable();
             }
         }
-        
     }
+
+    bool changed = false;
 
     /// <summary>
     /// Attacks the player2 (Bot) in the position you pass.
     /// </summary>
     /// <param name="pos"></param>
-    /// <param name="client"></param>
-    void AttackAtPosition(string pos, MqttClient client)
+    void AttackAtPosition(string pos)
     {
-        ButtonManifest currentButton = ButtonGridSpawner.instance.GetButtonByPosition(pos);
+        ButtonManifest currentButton = PlayersTableControl.instance.panelPlayer2.GetButtonByPosition(pos);
 
-        Player currentPlayer = currentButton.getButtonOwner();
-        
-        if (gameState == GameState.UserAttacking) //Unity is attacking the telegram bot. Telegram handles the logic of bot attacking back.
+        Player currentPlayer = currentButton.GetButtonOwner();
+        Player otherPlayer = PlayersPanelControl.instance.GetPlayer(1);
+
+        if (currentPlayer.name == otherPlayer.name)
         {
-            Debug.Log("[ButtonGridSpawner] Attacking Player 2 at this position: " + pos);
-            InfoPanelManager.instance.SpawnInfoMessage("Attacking Player 2 at this position: " + pos);
-            UnblocBlockPlayer2(false); //unblock bot so it can attack back
+            otherPlayer = PlayersPanelControl.instance.GetPlayer(0);
+        }
+        
+        if (GetGameState() == GameState.Player1Attacking) //Unity is attacking the telegram bot. Telegram handles the logic of bot attacking back.
+        {
+            Debug.Log("[ButtonGridSpawner] Attacking Player 2 (Bot) at this position: " + pos);
+            
+            InfoPanelManager.instance.SpawnInfoMessage("Attacking Player 2 (Bot) at this position: " + pos);
 
-            MQTTUnity2Bot.SendMessageToBot(pos, client);
-            gameState = GameState.BotAttacking; //it is unity user turn
+            if (gameType == GameType.BotVsUnity)
+            {
+                UnblocBlockPlayer2(false); //unblock bot so it can attack back
+
+                MessagePacket message = new MessagePacket(pos, "attack_position");
+
+                TelegramServerRequesterHelper.SendMessageToBot(message.ToJson(), this);
+            }
         }
         else //we have been attacked by the bot.
         {   
-            Debug.Log("[ButtonGridSpawner] Bot has attacked us at this position: " + pos);
-            //Bot has attacked the unity.
-            if (currentButton.hasGotHiddenShip()) 
+            // we are searching for the button that has the same position as the one we have received.
+            currentButton = PlayersTableControl.instance.panelPlayer1.GetButtonByPosition(pos);
+
+            //Bot has attacked unity.
+            if (currentButton.HasGotHiddenShip()) 
             {
-                InfoPanelManager.instance.SpawnInfoMessage("A ship by " + currentPlayer.name + " was turned down by player 2!");
+                changed = calculate_number_of_boats(currentPlayer.numOfBoats, 3);                
+                
+                Debug.Log("[ButtonGridSpawner] Bot has attacked us at this position: " + pos + " " + changed);
 
-                MQTTUnity2Bot.SendMessageToBot("A ship by " + currentPlayer.name + " was turned down!", client);
+                if (changed)
+                {
+                    InfoPanelManager.instance.SpawnInfoMessage($"A ship by  {currentPlayer.name} (Player 1) was turned down by {otherPlayer.name} (Player 2) !");
 
-                PlayersPanelControl.instance.setUserNumberOfBoats(currentPlayer, 3);
+                    if (gameType == GameType.BotVsUnity)
+                    {
+                        // MessagePacket message = new MessagePacket($"Yeah you rock it, you turn down a ship of  {currentPlayer.name} (Player 1)!", "text");
+                        MessagePacket message = new MessagePacket($"{currentButton.ButtonAttackCoordenates}:{currentButton.ButtonOrientation}", "attack_response");
+
+                        TelegramServerRequesterHelper.SendMessageToBot(message.ToJson(), this);
+                    }
+
+                }else{
+
+                    InfoPanelManager.instance.SpawnInfoMessage($"{otherPlayer.name} (Player 2) hit your ship {currentPlayer.name} (Player 1)!");
+                    
+                    if (gameType == GameType.BotVsUnity)
+                    {
+                        // MessagePacket message = new MessagePacket($"Yeah you rock it, you hit a ship from {currentPlayer.name} (Player 1)!", "text");
+                        MessagePacket message = new MessagePacket($"{currentButton.ButtonAttackCoordenates}:{currentButton.ButtonOrientation}", "attack_response");
+
+                        TelegramServerRequesterHelper.SendMessageToBot(message.ToJson(), this);
+                    }
+                }
 
                 currentButton.UpdateState(ButtonState.ShipDown);
-
             }
             else
             {
-                InfoPanelManager.instance.SpawnInfoMessage("You hit watter. What a dumb one!");
+                Debug.Log("[ButtonGridSpawner] Bot has hit water: " + pos);
 
-                MQTTUnity2Bot.SendMessageToBot("Player 2 hit watter. What a dumb one!", client);
+                InfoPanelManager.instance.SpawnInfoMessage("Player 2 hit watter. What a dumb one!");
+
+                if (gameType == GameType.BotVsUnity)
+                {
+                    // MessagePacket message = new MessagePacket("You hit watter. What a dumb one!", "text");
+                    MessagePacket message = new MessagePacket("missed", "attack_response");
+
+                    TelegramServerRequesterHelper.SendMessageToBot(message.ToJson(), this);
+                }
 
                 currentButton.UpdateState(ButtonState.WaterDown);
             }
 
-            currentButton.setButtonInteractable(false);
             
-            ButtonGridSpawner.instance.TakeScreenshotOfPlayAndSentToBot(); //we show the bot how good he was
-            UnblocBlockPlayer2(true); //block bot so it can't attack
-            gameState = GameState.UserAttacking; //it is unity user turn
+            
+            AfterAttackingLogic();
+        }
 
+    }
+
+    bool calculate_number_of_boats(int currentBoatNumber, int BOAT_SIZE)
+    {
+        int table_boat_pieces_count = PlayersTableControl.instance.panelPlayer1.GetNumberOfBoats() / BOAT_SIZE;
+        bool changed = false;
+        
+        if (table_boat_pieces_count % 2 == 0)
+        {
+            Debug.Log("WE HAVE LOST A SHIP " + table_boat_pieces_count.ToString() +  " " + PlayersTableControl.instance.panelPlayer1.GetNumberOfBoats().ToString());
+            changed = true;
+            changed = PlayersPanelControl.instance.SetUserNumberOfBoats(Player.PlayerType.PCUser, currentBoatNumber - 1);
+        }
+
+        return changed;
+    }
+
+    private void AfterAttackingLogic() {
+        GetPosibleWinner();
+        
+        if(GetGameState() != GameState.Player2Won || GetGameState() != GameState.Player1Won)
+        {
+            if (GetGameState() == GameState.Player2Attacking)
+            {
+                PlayersTableControl.instance.panelPlayer2.SwitchTableToAttack();
+                UnblocBlockPlayer2(true); //block bot so it can't attack
+                SetGameState(GameState.Player1Attacking);
+            }
+            else
+            {
+                PlayersTableControl.instance.panelPlayer2.SwitchTableToViewMode();
+                SetGameState(GameState.Player2Attacking); //it is bot user turn
+            }
         }
     }
 
     #endregion
-
 
     #region SceneManagement
     // Start is called before the first frame update

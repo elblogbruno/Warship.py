@@ -1,29 +1,20 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using TMPro;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.EventSystems;
-using UnityEngine.Serialization;
-using UnityEngine.UI;
 
 public class HandlePlacingBoats : MonoBehaviour
 {
     #region Variables
     public static HandlePlacingBoats instance = null;
-    public BoatPlacementPanel BoatPlacementPanel;
 
-
-    private const int maxBoats = 3;
+    private const int MAX_BOATS = 3;
     public List<ButtonManifest> currentBoats;
     public Action OnBoatsPlaced;
-
-    public Image boatImageCursor;
-    public float movementSpeed = 0.1f;
     
     private bool UpdateUI = true;
+    public int currBoatsSum = 0;
+    
     #endregion
 
     #region Setup
@@ -41,23 +32,23 @@ public class HandlePlacingBoats : MonoBehaviour
     }
     private void Start()
     {
-        BoatPlacementPanel.doneButton.gameObject.SetActive(false);
-        BoatPlacementPanel.doneButton.onClick.AddListener(StopPlacingBoats);
+        TopPanelManager.instance.doneButton.gameObject.SetActive(false);
+        TopPanelManager.instance.doneButton.onClick.AddListener(StopPlacingBoats);
         
-        BoatPlacementPanel.currentBoatNumberPanel.SetActive(false);
+        TopPanelManager.instance.currentBoatNumberPanel.SetActive(false);
         currentBoats = new List<ButtonManifest>();
     }
 
     #endregion
     public void StartPlacingBoats(bool debug = false)
     {
-        BoatPlacementPanel.currentBoatNumberPanel.SetActive(true);
+        TopPanelManager.instance.currentBoatNumberPanel.SetActive(true);
+        
         if (!debug)
         {
             InfoPanelManager.instance.SpawnInfoMessage("Player 1 please, be careful with player 2!");
             InfoPanelManager.instance.SpawnInfoMessage("Player 1 please, start by placing your first boat!");
         }
-        //currentBoatInfoText.text = "Boat 0 out of 3";
     }
 
     private bool BoatOnList(ButtonManifest button)
@@ -72,108 +63,121 @@ public class HandlePlacingBoats : MonoBehaviour
 
         return false;
     }
-    public int currBoatsSum = 0;
-    private bool allowPlacing = true;
-    public void PlaceBoat(string coordinates,Sprite boatSprite)
+
+    /* Places boat on the board */
+    public void PlaceBoat(string coordinates, String boatType)
     {
-        Debug.Log(currBoatsSum + " " + maxBoats);
-        ButtonManifest clickedButton = ButtonGridSpawner.instance.GetButtonByPosition(coordinates);
-        bool isAlreadySelected = BoatOnList(clickedButton);
-        
-        if (isAlreadySelected) //we need to be able to deselect boats
+        if (currBoatsSum >= MAX_BOATS)
         {
-            Debug.Log("Deselecting boat");
-            
-            clickedButton.setHiddenShip(false);
-            currentBoats.Remove(clickedButton);
-            
-            //allowPlacing = true;
+            InfoPanelManager.instance.SpawnInfoMessage("You can't place more boats!");
+            return;
+        }
+
+        ButtonManifest clickedButton = PlayersTableControl.instance.panelPlayer1.GetButtonByPosition(coordinates);
+        
+        EventSystem.current.SetSelectedGameObject(clickedButton.gameObject);
+
+        bool boatExists = BoatOnList(clickedButton);
+        
+        if (boatExists) //we need to be able to deselect boats
+        {
+            RemoveBoat(clickedButton);
+        }
+        
+        if (clickedButton.gameObject.GetComponent<Boat>().TryPlaceBoat(boatType))
+        {                
+            currentBoats.Add(clickedButton);
+
+            UpdateCounter();
         }
         else
         {
-            if (allowPlacing)
-            {
-                //clickedButton.gameObject.SetActive(false);
-
-                clickedButton.setHiddenShip(true);
-                clickedButton.ButtonGridImage.sprite = boatSprite;
-                currentBoats.Add(clickedButton);
-            }
-        }
-        
-        currBoatsSum = currentBoats.Count;
-        BoatPlacementPanel.currentBoatInfoText.text = $"Boat {currBoatsSum} out of 3";
+            InfoPanelManager.instance.SpawnInfoMessage("Boat can't be placed here!");
+        }    
     }
-    public void PlaceBoat(string coordinates)
+
+    /* Removes boat from the list and desinitializes it */
+    private void RemoveBoat(ButtonManifest boat)
     {
-        Debug.Log(currBoatsSum + " " + maxBoats);
-        ButtonManifest clickedButton = ButtonGridSpawner.instance.GetButtonByPosition(coordinates);
-        bool isAlreadySelected = BoatOnList(clickedButton);
-        
-        if (isAlreadySelected) //we need to be able to deselect boats
-        {
-            Debug.Log("Deselecting boat");
-            
-            clickedButton.setHiddenShip(false);
-            currentBoats.Remove(clickedButton);
-            
-            //allowPlacing = true;
-        }
-        else
-        {
-            if (allowPlacing)
-            {
-                //clickedButton.gameObject.SetActive(false);
+        currentBoats.Remove(boat);
 
-                clickedButton.setHiddenShip(true);
-                currentBoats.Add(clickedButton);
-            }
-        }
-        
-        currBoatsSum = currentBoats.Count;
-        BoatPlacementPanel.currentBoatInfoText.text = $"Boat {currBoatsSum} out of 3";
+        boat.gameObject.GetComponent<Boat>().DesinitializeBoat();
     }
+
+    /* Updates the counter on the top panel */
+    private void UpdateCounter()
+    {
+        currBoatsSum = currentBoats.Count;
+        
+        string info =  $"Boat {currBoatsSum} out of {MAX_BOATS}";
+        
+        TopPanelManager.instance.SetInfoPanelText(info); 
+    }
+
+    /* Unplaces a boat from the board */
+    public void UnplaceBoat(string coordinates)
+    {
+        ButtonManifest clickedButton = PlayersTableControl.instance.panelPlayer1.GetButtonByPosition(coordinates);
+
+        RemoveBoat(clickedButton);
+    
+        UpdateCounter();
+    }
+
+    private ButtonManifest button;
     private void Update()
     {
         if (UpdateUI)
         {
-            if (currentBoats.Count >= maxBoats)
+            if (currentBoats.Count >= MAX_BOATS)
             {
-                BoatPlacementPanel.doneButton.gameObject.SetActive(true);
-                BoatPlacementPanel.doneButton.Select();
-                allowPlacing = false;
+                TopPanelManager.instance.SetButtonStatus(true);
+                TopPanelManager.instance.doneButton.Select();
             }
             else
             {
-                BoatPlacementPanel.doneButton.gameObject.SetActive(false);
-                allowPlacing = true;
+                TopPanelManager.instance.SetButtonStatus(false);
             }
-            //if(Input.mousePresent)
-            //    boatImageCursor.transform.position = Vector3.Lerp(boatImageCursor.transform.position,Input.mousePosition,movementSpeed);
-            
-            if (Input.GetKeyDown(KeyCode.V))
-            {
-                currentBoats[currentBoats.Count-1].RotateButton(false);
-            }
-            else if(Input.GetKeyDown(KeyCode.H))
-            {
-                currentBoats[currentBoats.Count-1].RotateButton(true);
-            }
-        }
 
-        
-        
+            // if (currentBoats.Count >= 0)
+            // {
+            //     if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
+            //     {
+            //         if (EventSystem.current.currentSelectedGameObject.GetComponent<ButtonManifest>() != null)
+            //         {
+            //             button = EventSystem.current.currentSelectedGameObject.GetComponent<ButtonManifest>();
+
+            //             if (Input.GetKeyDown(KeyCode.V) && button.ButtonOrientation != "v")
+            //             {
+            //                 button.RotateButton(false);
+            //                 button.gameObject.GetComponent<Boat>().RespawnBoat(button.x, button.y, "h", "v");
+            //             }
+            //             else if (Input.GetKeyDown(KeyCode.H) && button.ButtonOrientation != "h")
+            //             {
+            //                 button.RotateButton(true);
+            //                 button.gameObject.GetComponent<Boat>().RespawnBoat(button.x, button.y, "v", "h");
+            //             }
+            //         }
+            //         else
+            //         {
+            //             Debug.Log($"Selected gameobject {EventSystem.current.currentSelectedGameObject.name} is not a correct button!");
+                        
+            //             if (EventSystem.current.currentSelectedGameObject.GetComponent<ButtonManifest>() != null)
+            //             {
+            //                 Debug.Log("Deselecting before boat!");
+            //                 EventSystem.current.SetSelectedGameObject(null);
+            //             }
+            //         }
+            //     }
+            // }
+        }
     }
 
     public void StopPlacingBoats()
     {
         Debug.Log("Stop placing boats");
         UpdateUI = false;
-        BoatPlacementPanel.doneButton.gameObject.SetActive(false);
+        TopPanelManager.instance.SetButtonStatus(false);
         OnBoatsPlaced?.Invoke();
-        for(int i = 0; i < currentBoats.Count; i++)
-        {
-            currentBoats[i].UpdateState(ButtonState.Idle);
-        }
     }
 }
